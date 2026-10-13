@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Events | Event Sponsorship Tracker</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header class="site-header">
+    <a class="brand" th:href="@{/events}">Event Sponsorship Tracker</a>
+</header>
+
+<main class="container">
+    <div class="page-heading">
+        <h1>Events</h1>
+        <a class="button" id="create-event" th:href="@{/events/new}">+ Create Event</a>
+    </div>
+
+    <p class="alert alert-success" id="success-message"
+       th:if="${successMessage}" th:text="${successMessage}">Saved.</p>
+
+    <p class="empty-state" th:if="${#lists.isEmpty(events)}">
+        No events yet. Click <strong>Create Event</strong> to add the first one.
+    </p>
+
+    <div class="table-wrapper" th:unless="${#lists.isEmpty(events)}">
+        <table id="events-table">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Event Name</th>
+                <th>Date</th>
+                <th>Venue</th>
+                <th>Description</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="event : ${events}">
+                <td th:text="${event.id}">1</td>
+                <td th:text="${event.name}">Tech Fest</td>
+                <td th:text="${#temporals.format(event.eventDate, 'dd MMM yyyy')}">05 Nov 2026</td>
+                <td th:text="${event.venue}">Main Auditorium</td>
+                <td th:text="${event.description}">Annual technical festival</td>
+                <td><a class="button button-small" th:href="@{/events/{id}/edit(id=${event.id})}">Edit</a></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+</body>
+</html>
