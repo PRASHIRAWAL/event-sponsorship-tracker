@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<!--
+    Shared page parts.
+    Head:   <head th:replace="~{fragments/layout :: head('Events')}"></head>
+    Footer: <footer th:replace="~{fragments/layout :: footer}"></footer>
+-->
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#2563eb">
+    <title th:text="${title} + ' | Event Sponsorship Tracker'">Event Sponsorship Tracker</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<footer class="site-footer" th:fragment="footer">
+    <div class="site-footer-inner">
+        <span>Event Sponsorship Tracker &middot; DevOps project</span>
+        <nav class="site-footer-links" aria-label="Footer">
+            <a th:href="@{/api/events}">Events API</a>
+            <a th:href="@{/api/sponsors}">Sponsors API</a>
+            <a th:href="@{/actuator/health}">Health check</a>
+        </nav>
+    </div>
+</footer>
+</body>
+</html>

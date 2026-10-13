@@ -1,72 +1,117 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Events | Event Sponsorship Tracker</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
-</head>
+<head th:replace="~{fragments/layout :: head('Events')}"></head>
 <body>
 <header th:replace="~{fragments/header :: header('events')}"></header>
 
-<main class="container">
-    <div class="page-heading">
-        <h1>Events</h1>
-        <a class="button" id="create-event" th:href="@{/events/new}">+ Create Event</a>
+<main class="page">
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">Manage</p>
+            <h1 class="page-title">Events</h1>
+            <p class="page-subtitle">Create, track and update the events your sponsors support.</p>
+        </div>
+        <div class="page-actions">
+            <a class="btn btn-primary" id="create-event" th:href="@{/events/new}">
+                <svg th:replace="~{fragments/icons :: plus}"></svg>Create Event</a>
+        </div>
     </div>
 
-    <p class="alert alert-success" id="success-message"
-       th:if="${successMessage}" th:text="${successMessage}">Saved.</p>
+    <div class="banner banner-success" id="success-message" role="status" th:if="${successMessage}">
+        <svg th:replace="~{fragments/icons :: check}"></svg>
+        <span th:text="${successMessage}">Saved.</span>
+    </div>
 
-    <form class="search-form" id="event-search" method="get" th:action="@{/events}">
-        <input type="search" name="q" th:value="${q}" placeholder="Search by name or venue" aria-label="Search events">
-        <select name="status" aria-label="Filter by status">
+    <form class="toolbar" id="event-search" method="get" role="search" th:action="@{/events}">
+        <div class="search-field">
+            <svg th:replace="~{fragments/icons :: search}"></svg>
+            <input class="input" type="search" name="q" th:value="${q}" placeholder="Search by name or venue"
+                   aria-label="Search events">
+        </div>
+        <select class="select" name="status" aria-label="Filter by status">
             <option value="">All statuses</option>
             <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.label}"
                     th:selected="${s == status}">Upcoming</option>
         </select>
-        <button type="submit" class="button">Search</button>
-        <a class="button button-secondary" th:if="${filtered}" th:href="@{/events}">Clear</a>
+        <button type="submit" class="btn btn-primary">Search</button>
+        <a class="btn btn-ghost" th:if="${filtered}" th:href="@{/events}">Clear</a>
     </form>
 
-    <p class="empty-state" th:if="${#lists.isEmpty(events) and !filtered}">
-        No events yet. Click <strong>Create Event</strong> to add the first one.
-    </p>
-
-    <p class="empty-state" th:if="${#lists.isEmpty(events) and filtered}">
-        No events match your search.
-    </p>
-
-    <div class="table-wrapper" th:unless="${#lists.isEmpty(events)}">
-        <table id="events-table">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Event Name</th>
-                <th>Date</th>
-                <th>Venue</th>
-                <th>Description</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="event : ${events}">
-                <td th:text="${event.id}">1</td>
-                <td><a th:href="@{/events/{id}(id=${event.id})}" th:text="${event.name}">Tech Fest</a></td>
-                <td th:text="${#temporals.format(event.eventDate, 'dd MMM yyyy')}">05 Nov 2026</td>
-                <td th:text="${event.venue}">Main Auditorium</td>
-                <td th:text="${event.description}">Annual technical festival</td>
-                <td><span class="badge" th:classappend="${'badge-' + #strings.toLowerCase(event.status.name())}"
-                          th:text="${event.status.label}">Upcoming</span></td>
-                <td class="actions">
-                    <a class="button button-small button-secondary" th:href="@{/events/{id}(id=${event.id})}">View</a>
-                    <a class="button button-small" th:href="@{/events/{id}/edit(id=${event.id})}">Edit</a>
-                </td>
-            </tr>
-            </tbody>
-        </table>
+    <div class="card" th:if="${#lists.isEmpty(events)}">
+        <div class="empty-state">
+            <span class="empty-state-icon"><svg th:replace="~{fragments/icons :: calendar}"></svg></span>
+            <th:block th:unless="${filtered}">
+                <p class="empty-state-title">No events yet. Click <strong>Create Event</strong> to add the first one.</p>
+                <a class="btn btn-primary" th:href="@{/events/new}">
+                    <svg th:replace="~{fragments/icons :: plus}"></svg>Create Event</a>
+            </th:block>
+            <th:block th:if="${filtered}">
+                <p class="empty-state-title">No events match your search.</p>
+                <p>Try a different keyword or status.</p>
+                <a class="btn btn-secondary" th:href="@{/events}">Clear filters</a>
+            </th:block>
+        </div>
     </div>
+
+    <th:block th:unless="${#lists.isEmpty(events)}">
+        <p class="result-meta"
+           th:text="${#lists.size(events) == 1} ? 'Showing 1 event' : |Showing ${#lists.size(events)} events|">
+            Showing 2 events</p>
+
+        <div class="card table-card">
+            <div class="table-wrapper">
+                <table class="data-table responsive" id="events-table">
+                    <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>Date</th>
+                        <th>Venue</th>
+                        <th>Status</th>
+                        <th class="col-actions"><span class="sr-only">Actions</span></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="event : ${events}">
+                        <td class="cell-primary" data-label="Event">
+                            <div class="cell-identity">
+                                <div class="date-tile" aria-hidden="true"
+                                     th:classappend="${event.status.name() == 'PAST'} ? 'is-past'">
+                                    <span class="date-tile-month"
+                                          th:text="${#temporals.format(event.eventDate, 'MMM')}">Nov</span>
+                                    <span class="date-tile-day" th:text="${#temporals.format(event.eventDate, 'dd')}">05</span>
+                                </div>
+                                <div class="cell-identity-text">
+                                    <a class="cell-title" th:href="@{/events/{id}(id=${event.id})}"
+                                       th:text="${event.name}">Tech Fest</a>
+                                    <p class="cell-sub clamp"
+                                       th:text="${event.description != null} ? |ID ${event.id} · ${event.description}| : |ID ${event.id}|">
+                                        ID 1 · Annual technical festival</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="nowrap" data-label="Date"
+                            th:text="${#temporals.format(event.eventDate, 'dd MMM yyyy')}">05 Nov 2026</td>
+                        <td data-label="Venue" th:text="${event.venue}">Main Auditorium</td>
+                        <td data-label="Status">
+                            <span class="badge" th:classappend="${'badge-' + #strings.toLowerCase(event.status.name())}"
+                                  th:text="${event.status.label}">Upcoming</span>
+                        </td>
+                        <td class="col-actions">
+                            <div class="row-actions">
+                                <a class="btn btn-sm btn-secondary" th:href="@{/events/{id}(id=${event.id})}">
+                                    <svg th:replace="~{fragments/icons :: eye}"></svg>View</a>
+                                <a class="btn btn-sm btn-soft" th:href="@{/events/{id}/edit(id=${event.id})}">
+                                    <svg th:replace="~{fragments/icons :: edit}"></svg>Edit</a>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </th:block>
 </main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
 </body>
 </html>

@@ -1,83 +1,132 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Sponsors | Event Sponsorship Tracker</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
-</head>
+<head th:replace="~{fragments/layout :: head('Sponsors')}"></head>
 <body>
 <header th:replace="~{fragments/header :: header('sponsors')}"></header>
 
-<main class="container">
-    <div class="page-heading">
-        <h1>Sponsors</h1>
-        <a class="button" id="create-sponsor" th:href="@{/sponsors/new}">+ Add Sponsor</a>
+<main class="page">
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">Manage</p>
+            <h1 class="page-title">Sponsors</h1>
+            <p class="page-subtitle">Manage sponsor contacts, amounts and sponsorship status.</p>
+        </div>
+        <div class="page-actions">
+            <a class="btn btn-primary" id="create-sponsor" th:href="@{/sponsors/new}">
+                <svg th:replace="~{fragments/icons :: plus}"></svg>Add Sponsor</a>
+        </div>
     </div>
 
-    <p class="alert alert-success" id="success-message"
-       th:if="${successMessage}" th:text="${successMessage}">Saved.</p>
+    <div class="banner banner-success" id="success-message" role="status" th:if="${successMessage}">
+        <svg th:replace="~{fragments/icons :: check}"></svg>
+        <span th:text="${successMessage}">Saved.</span>
+    </div>
 
-    <form class="search-form" id="sponsor-search" method="get" th:action="@{/sponsors}">
-        <input type="search" name="q" th:value="${q}" placeholder="Search by name, contact or email"
-               aria-label="Search sponsors">
-        <select name="status" aria-label="Filter by status">
+    <form class="toolbar" id="sponsor-search" method="get" role="search" th:action="@{/sponsors}">
+        <div class="search-field">
+            <svg th:replace="~{fragments/icons :: search}"></svg>
+            <input class="input" type="search" name="q" th:value="${q}" placeholder="Search by name, contact or email"
+                   aria-label="Search sponsors">
+        </div>
+        <select class="select" name="status" aria-label="Filter by status">
             <option value="">All statuses</option>
             <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.label}"
                     th:selected="${s == status}">Confirmed</option>
         </select>
-        <select name="eventId" aria-label="Filter by event">
+        <select class="select" name="eventId" aria-label="Filter by event">
             <option value="">All events</option>
             <option th:each="e : ${events}" th:value="${e.id}" th:text="${e.name}"
                     th:selected="${e.id == eventId}">Tech Fest</option>
         </select>
-        <button type="submit" class="button">Search</button>
-        <a class="button button-secondary" th:if="${filtered}" th:href="@{/sponsors}">Clear</a>
+        <button type="submit" class="btn btn-primary">Search</button>
+        <a class="btn btn-ghost" th:if="${filtered}" th:href="@{/sponsors}">Clear</a>
     </form>
 
-    <p class="empty-state" th:if="${#lists.isEmpty(sponsors) and !filtered}">
-        No sponsors yet. Click <strong>Add Sponsor</strong> to add the first one.
-    </p>
-
-    <p class="empty-state" th:if="${#lists.isEmpty(sponsors) and filtered}">
-        No sponsors match your search.
-    </p>
-
-    <div class="table-wrapper" th:unless="${#lists.isEmpty(sponsors)}">
-        <table id="sponsors-table">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Sponsor</th>
-                <th>Contact Person</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Event</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="sponsor : ${sponsors}">
-                <td th:text="${sponsor.id}">1</td>
-                <td th:text="${sponsor.name}">Acme Corp</td>
-                <td th:text="${sponsor.contactPerson ?: '—'}">Jane Doe</td>
-                <td th:text="${sponsor.email ?: '—'}">jane@acme.com</td>
-                <td th:text="${sponsor.phone ?: '—'}">+91 98765 43210</td>
-                <td>
-                    <a th:if="${sponsor.event != null}" th:href="@{/events/{id}(id=${sponsor.event.id})}"
-                       th:text="${sponsor.event.name}">Tech Fest</a>
-                    <span th:if="${sponsor.event == null}" class="muted">Not linked</span>
-                </td>
-                <td th:text="${sponsor.sponsorshipAmount == null} ? '—' : ${#numbers.formatDecimal(sponsor.sponsorshipAmount, 1, 'COMMA', 2, 'POINT')}">50,000.00</td>
-                <td><span class="badge" th:classappend="${'badge-' + #strings.toLowerCase(sponsor.sponsorshipStatus.name())}"
-                          th:text="${sponsor.sponsorshipStatus.label}">Confirmed</span></td>
-                <td><a class="button button-small" th:href="@{/sponsors/{id}/edit(id=${sponsor.id})}">Edit</a></td>
-            </tr>
-            </tbody>
-        </table>
+    <div class="card" th:if="${#lists.isEmpty(sponsors)}">
+        <div class="empty-state">
+            <span class="empty-state-icon"><svg th:replace="~{fragments/icons :: users}"></svg></span>
+            <th:block th:unless="${filtered}">
+                <p class="empty-state-title">No sponsors yet. Click <strong>Add Sponsor</strong> to add the first one.</p>
+                <a class="btn btn-primary" th:href="@{/sponsors/new}">
+                    <svg th:replace="~{fragments/icons :: plus}"></svg>Add Sponsor</a>
+            </th:block>
+            <th:block th:if="${filtered}">
+                <p class="empty-state-title">No sponsors match your search.</p>
+                <p>Try a different keyword, status or event.</p>
+                <a class="btn btn-secondary" th:href="@{/sponsors}">Clear filters</a>
+            </th:block>
+        </div>
     </div>
+
+    <th:block th:unless="${#lists.isEmpty(sponsors)}">
+        <p class="result-meta"
+           th:text="${#lists.size(sponsors) == 1} ? 'Showing 1 sponsor' : |Showing ${#lists.size(sponsors)} sponsors|">
+            Showing 2 sponsors</p>
+
+        <div class="card table-card">
+            <div class="table-wrapper">
+                <table class="data-table responsive" id="sponsors-table">
+                    <thead>
+                    <tr>
+                        <th>Sponsor</th>
+                        <th>Contact</th>
+                        <th>Event</th>
+                        <th class="col-num">Amount</th>
+                        <th>Status</th>
+                        <th class="col-actions"><span class="sr-only">Actions</span></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="sponsor : ${sponsors}">
+                        <td class="cell-primary" data-label="Sponsor">
+                            <div class="cell-identity">
+                                <span class="avatar" aria-hidden="true" th:classappend="${'avatar-' + (sponsor.id % 6)}"
+                                      th:text="${#strings.substring(sponsor.name, 0, 1)}">A</span>
+                                <div class="cell-identity-text">
+                                    <span class="cell-title" th:text="${sponsor.name}">Acme Corp</span>
+                                    <p class="cell-sub" th:text="|ID ${sponsor.id}|">ID 1</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td data-label="Contact">
+                            <div class="cell-stack">
+                                <p th:text="${sponsor.contactPerson ?: '—'}">Jane Doe</p>
+                                <p class="cell-sub" th:if="${sponsor.email != null}">
+                                    <a th:href="|mailto:${sponsor.email}|" th:text="${sponsor.email}">jane@acme.com</a>
+                                </p>
+                                <p class="cell-sub" th:if="${sponsor.phone != null}" th:text="${sponsor.phone}">
+                                    +91 98765 43210</p>
+                            </div>
+                        </td>
+                        <td data-label="Event">
+                            <div class="cell-stack" th:if="${sponsor.event != null}">
+                                <a th:href="@{/events/{id}(id=${sponsor.event.id})}" th:text="${sponsor.event.name}">Tech Fest</a>
+                                <p class="cell-sub"
+                                   th:text="${#temporals.format(sponsor.event.eventDate, 'dd MMM yyyy')}">05 Nov 2026</p>
+                            </div>
+                            <span class="badge badge-neutral" th:if="${sponsor.event == null}">Not linked</span>
+                        </td>
+                        <td class="col-num" data-label="Amount">
+                            <span class="amount" th:if="${sponsor.sponsorshipAmount != null}"
+                                  th:text="${#numbers.formatDecimal(sponsor.sponsorshipAmount, 1, 'COMMA', 2, 'POINT')}">50,000.00</span>
+                            <span class="muted" th:if="${sponsor.sponsorshipAmount == null}">—</span>
+                        </td>
+                        <td data-label="Status">
+                            <span class="badge" th:classappend="${'badge-' + #strings.toLowerCase(sponsor.sponsorshipStatus.name())}"
+                                  th:text="${sponsor.sponsorshipStatus.label}">Confirmed</span>
+                        </td>
+                        <td class="col-actions">
+                            <a class="btn btn-sm btn-soft" th:href="@{/sponsors/{id}/edit(id=${sponsor.id})}">
+                                <svg th:replace="~{fragments/icons :: edit}"></svg>Edit</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </th:block>
 </main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
 </body>
 </html>

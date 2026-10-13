@@ -1,55 +1,85 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Alerts | Event Sponsorship Tracker</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
-</head>
+<head th:replace="~{fragments/layout :: head('Alerts')}"></head>
 <body>
 <header th:replace="~{fragments/header :: header('alerts')}"></header>
 
-<main class="container">
-    <h1>Alerts &amp; Exceptions</h1>
-
-    <p class="alert alert-success" id="no-alerts" th:if="${#lists.isEmpty(alerts)}">
-        No issues found. All events and sponsors pass the checks below.
-    </p>
-
-    <div class="table-wrapper" th:unless="${#lists.isEmpty(alerts)}">
-        <table id="alerts-table">
-            <thead>
-            <tr>
-                <th>Issue</th>
-                <th>Type</th>
-                <th>Item</th>
-                <th>Action</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="alert : ${alerts}">
-                <td th:text="${alert.rule().title}">Missing contact person</td>
-                <td th:text="${alert.subjectType() == 'EVENT'} ? 'Event' : 'Sponsor'">Sponsor</td>
-                <td th:text="${alert.subjectName()}">Acme Corp</td>
-                <td>
-                    <a class="button button-small" th:if="${alert.subjectType() == 'EVENT'}"
-                       th:href="@{/events/{id}(id=${alert.subjectId()})}">View Event</a>
-                    <a class="button button-small" th:if="${alert.subjectType() == 'SPONSOR'}"
-                       th:href="@{/sponsors/{id}/edit(id=${alert.subjectId()})}">Fix Sponsor</a>
-                </td>
-            </tr>
-            </tbody>
-        </table>
+<main class="page">
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">Monitor</p>
+            <h1 class="page-title">
+                Alerts &amp; Exceptions
+                <span class="count-pill" th:classappend="${#lists.isEmpty(alerts)} ? 'is-zero'"
+                      th:text="${#lists.size(alerts)}">0</span>
+            </h1>
+            <p class="page-subtitle">Events and sponsors that need follow-up, based on the rules below.</p>
+        </div>
     </div>
 
-    <h2>Rules Applied</h2>
-    <p class="muted">Cancelled sponsorships are excluded from all sponsor checks.</p>
-    <ul class="rule-list" id="alert-rules">
-        <li th:each="rule : ${rules}">
-            <strong th:text="${rule.title}">Rule</strong>:
-            <span th:text="${rule.description}">Description</span>
-        </li>
-    </ul>
+    <div class="card healthy-card" id="no-alerts" role="status" th:if="${#lists.isEmpty(alerts)}">
+        <span class="healthy-icon"><svg th:replace="~{fragments/icons :: check}"></svg></span>
+        <div>
+            <p class="healthy-title">No issues found.</p>
+            <p class="muted">All events and sponsors pass the checks below.</p>
+        </div>
+    </div>
+
+    <th:block th:unless="${#lists.isEmpty(alerts)}">
+        <div class="card alert-overview" role="status">
+            <span class="alert-overview-icon"><svg th:replace="~{fragments/icons :: alert}"></svg></span>
+            <div>
+                <p class="alert-overview-title"
+                   th:text="${#lists.size(alerts) == 1} ? '1 item needs attention' : |${#lists.size(alerts)} items need attention|">
+                    3 items need attention</p>
+                <p class="alert-overview-text">Use the action on each card to open the event or sponsor and fix it.
+                    The alert clears automatically once the record passes the rule.</p>
+            </div>
+        </div>
+
+        <ul class="alert-list" id="alerts-list">
+            <li class="card alert-card" th:each="alert : ${alerts}">
+                <span class="alert-card-icon">
+                    <th:block th:if="${alert.subjectType() == 'EVENT'}"><svg th:replace="~{fragments/icons :: calendar}"></svg></th:block>
+                    <th:block th:if="${alert.subjectType() == 'SPONSOR'}"><svg th:replace="~{fragments/icons :: users}"></svg></th:block>
+                </span>
+                <div class="alert-card-main">
+                    <p class="alert-card-title">
+                        <span th:replace="~{fragments/alerts :: severity(${alert.rule().name()})}"></span>
+                        <span th:text="${alert.rule().title}">Missing contact person</span>
+                    </p>
+                    <p class="alert-card-desc" th:text="${alert.rule().description}">Rule description</p>
+                    <p class="alert-card-subject">
+                        <span th:text="${alert.subjectType() == 'EVENT'} ? 'Event:' : 'Sponsor:'">Sponsor:</span>
+                        <strong th:text="${alert.subjectName()}">Acme Corp</strong>
+                    </p>
+                </div>
+                <div class="alert-card-action">
+                    <a class="btn btn-sm btn-soft" th:if="${alert.subjectType() == 'EVENT'}"
+                       th:href="@{/events/{id}(id=${alert.subjectId()})}">View Event</a>
+                    <a class="btn btn-sm btn-primary" th:if="${alert.subjectType() == 'SPONSOR'}"
+                       th:href="@{/sponsors/{id}/edit(id=${alert.subjectId()})}">Fix Sponsor</a>
+                </div>
+            </li>
+        </ul>
+    </th:block>
+
+    <section aria-labelledby="rules-title">
+        <h2 class="section-title rules-heading" id="rules-title">Rules Applied</h2>
+        <p class="rules-hint">Cancelled sponsorships are excluded from all sponsor checks.
+            Severity only affects how an alert is displayed.</p>
+        <ul class="rule-grid" id="alert-rules">
+            <li class="card rule-card" th:each="rule : ${rules}">
+                <div class="rule-card-head">
+                    <span th:text="${rule.title}">Rule</span>
+                    <span th:replace="~{fragments/alerts :: severity(${rule.name()})}"></span>
+                </div>
+                <p th:text="${rule.description}">Description</p>
+            </li>
+        </ul>
+    </section>
 </main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
 </body>
 </html>

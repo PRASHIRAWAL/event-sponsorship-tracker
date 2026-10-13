@@ -1,59 +1,91 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="${event.id == null} ? 'Create Event | Event Sponsorship Tracker' : 'Edit Event | Event Sponsorship Tracker'">
-        Event | Event Sponsorship Tracker</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
-</head>
+<head th:replace="~{fragments/layout :: head(${event.id == null} ? 'Create Event' : 'Edit Event')}"></head>
 <body>
 <header th:replace="~{fragments/header :: header('events')}"></header>
 
-<main class="container narrow">
-    <h1 th:text="${event.id == null} ? 'Create Event' : 'Edit Event'">Create Event</h1>
+<main class="page page-narrow">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a th:href="@{/events}">Events</a>
+        <span aria-hidden="true">/</span>
+        <span th:text="${event.id == null} ? 'New' : 'Edit'">New</span>
+    </nav>
 
-    <p class="alert alert-error" id="error-summary" th:if="${#fields.hasErrors('event.*')}">
-        Please correct the highlighted fields below.
-    </p>
+    <div class="page-header">
+        <div>
+            <h1 class="page-title" th:text="${event.id == null} ? 'Create Event' : 'Edit Event'">Create Event</h1>
+            <p class="page-subtitle"
+               th:text="${event.id == null} ? 'Add an event so sponsors can be linked to it.' : 'Update the details of this event.'">
+                Add an event so sponsors can be linked to it.</p>
+        </div>
+    </div>
 
-    <form id="event-form" method="post" th:object="${event}"
+    <div class="banner banner-error" id="error-summary" role="alert" th:if="${#fields.hasErrors('event.*')}">
+        <svg th:replace="~{fragments/icons :: error}"></svg>
+        <span>Please correct the highlighted fields below.</span>
+    </div>
+
+    <form class="card" id="event-form" method="post" th:object="${event}"
           th:action="${event.id == null} ? @{/events} : @{/events/{id}(id=${event.id})}">
+        <section class="form-section">
+            <div>
+                <h2 class="form-section-title">Event details</h2>
+                <p class="form-section-hint">The name, date and place shown to everyone tracking this event.</p>
+            </div>
+            <div class="form-fields">
+                <div class="field">
+                    <label class="label" for="name">Event Name <span class="required">*</span></label>
+                    <input class="input" type="text" id="name" th:field="*{name}" maxlength="150" required
+                           placeholder="e.g. Annual Tech Fest"
+                           th:classappend="${#fields.hasErrors('name')} ? 'invalid'">
+                    <p class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Error</p>
+                </div>
 
-        <div class="field">
-            <label for="name">Event Name <span class="required">*</span></label>
-            <input type="text" id="name" th:field="*{name}" maxlength="150" required
-                   th:classappend="${#fields.hasErrors('name')} ? 'invalid'">
-            <p class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Error</p>
-        </div>
+                <div class="form-grid">
+                    <div class="field">
+                        <label class="label" for="eventDate">Event Date <span class="required">*</span></label>
+                        <input class="input" type="date" id="eventDate" th:field="*{eventDate}" required
+                               th:classappend="${#fields.hasErrors('eventDate')} ? 'invalid'">
+                        <p class="field-error" th:if="${#fields.hasErrors('eventDate')}" th:errors="*{eventDate}">Error</p>
+                    </div>
 
-        <div class="field">
-            <label for="eventDate">Event Date <span class="required">*</span></label>
-            <input type="date" id="eventDate" th:field="*{eventDate}" required
-                   th:classappend="${#fields.hasErrors('eventDate')} ? 'invalid'">
-            <p class="field-error" th:if="${#fields.hasErrors('eventDate')}" th:errors="*{eventDate}">Error</p>
-        </div>
+                    <div class="field">
+                        <label class="label" for="venue">Venue <span class="required">*</span></label>
+                        <input class="input" type="text" id="venue" th:field="*{venue}" maxlength="150" required
+                               placeholder="e.g. Main Auditorium"
+                               th:classappend="${#fields.hasErrors('venue')} ? 'invalid'">
+                        <p class="field-error" th:if="${#fields.hasErrors('venue')}" th:errors="*{venue}">Error</p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-        <div class="field">
-            <label for="venue">Venue <span class="required">*</span></label>
-            <input type="text" id="venue" th:field="*{venue}" maxlength="150" required
-                   th:classappend="${#fields.hasErrors('venue')} ? 'invalid'">
-            <p class="field-error" th:if="${#fields.hasErrors('venue')}" th:errors="*{venue}">Error</p>
-        </div>
-
-        <div class="field">
-            <label for="description">Description</label>
-            <textarea id="description" th:field="*{description}" rows="4" maxlength="500"
-                      th:classappend="${#fields.hasErrors('description')} ? 'invalid'"></textarea>
-            <p class="field-error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">Error</p>
-        </div>
+        <section class="form-section">
+            <div>
+                <h2 class="form-section-title">Description</h2>
+                <p class="form-section-hint">Optional notes about what the event is and who it is for.</p>
+            </div>
+            <div class="form-fields">
+                <div class="field">
+                    <label class="label" for="description">Description <span class="optional">(optional)</span></label>
+                    <textarea class="textarea" id="description" th:field="*{description}" rows="4" maxlength="500"
+                              placeholder="What is this event about?"
+                              th:classappend="${#fields.hasErrors('description')} ? 'invalid'"></textarea>
+                    <p class="field-hint">Up to 500 characters.</p>
+                    <p class="field-error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">Error</p>
+                </div>
+            </div>
+        </section>
 
         <div class="form-actions">
-            <button type="submit" class="button" id="save-event"
+            <span class="form-actions-note">Fields marked <span class="required">*</span> are required.</span>
+            <a class="btn btn-secondary" th:href="@{/events}">Cancel</a>
+            <button type="submit" class="btn btn-primary" id="save-event"
                     th:text="${event.id == null} ? 'Create Event' : 'Save Changes'">Save</button>
-            <a class="button button-secondary" th:href="@{/events}">Cancel</a>
         </div>
     </form>
 </main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
 </body>
 </html>

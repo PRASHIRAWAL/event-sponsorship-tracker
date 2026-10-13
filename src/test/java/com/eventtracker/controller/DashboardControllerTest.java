@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDate;
 
 import static com.eventtracker.controller.SponsorApiControllerTest.sponsor;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
@@ -98,6 +99,48 @@ class DashboardControllerTest {
                 .andExpect(content().string(containsString("No email or phone")))
                 .andExpect(content().string(containsString("Undecided sponsorship for a past event")))
                 .andExpect(content().string(containsString("Rules Applied")));
+    }
+
+    @Test
+    void alertsPageShowsOneSeverityPerAlertWithoutChangingTheAlerts() throws Exception {
+        String html = mockMvc.perform(get("/alerts"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        // Globex: undecided for a past event (High), no email or phone (Medium), missing contact person (Low)
+        assertThat(countOccurrences(html, "class=\"card alert-card\"")).isEqualTo(3);
+        assertThat(countOccurrences(html, "class=\"alert-card-icon\"")).isEqualTo(3);
+        assertThat(html).contains("severity severity-high", "severity severity-medium", "severity severity-low");
+        // One severity badge per rule card as well (6 rules)
+        assertThat(countOccurrences(html, "class=\"card rule-card\"")).isEqualTo(6);
+    }
+
+    @Test
+    void dashboardShowsUpcomingEventsAndAttentionPreviews() throws Exception {
+        mockMvc.perform(get("/dashboard"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("upcomingEvents", hasSize(1)))
+                .andExpect(model().attribute("topAlerts", hasSize(3)))
+                .andExpect(content().string(containsString("Upcoming Events")))
+                .andExpect(content().string(containsString("Needs Attention")))
+                .andExpect(content().string(containsString("View all (3)")))
+                .andExpect(content().string(containsString("Globex")));
+    }
+
+    @Test
+    void dashboardPreviewsShowEmptyStatesWithoutData() throws Exception {
+        sponsorRepository.deleteAll();
+        eventRepository.deleteAll();
+
+        mockMvc.perform(get("/dashboard"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"total-events\">0<")))
+                .andExpect(content().string(containsString("No upcoming events")))
+                .andExpect(content().string(containsString("All clear")));
+    }
+
+    private static int countOccurrences(String text, String fragment) {
+        return text.split(java.util.regex.Pattern.quote(fragment), -1).length - 1;
     }
 
     @Test

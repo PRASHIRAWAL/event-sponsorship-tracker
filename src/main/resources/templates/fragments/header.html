@@ -2,14 +2,31 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <body>
 <!-- Shared site header. Usage: <header th:replace="~{fragments/header :: header('events')}"></header> -->
-<header class="site-header" th:fragment="header(active)">
-    <a class="brand" th:href="@{/dashboard}">Event Sponsorship Tracker</a>
-    <nav class="site-nav">
-        <a th:href="@{/dashboard}" th:classappend="${active == 'dashboard'} ? 'active'">Dashboard</a>
-        <a th:href="@{/events}" th:classappend="${active == 'events'} ? 'active'">Events</a>
-        <a th:href="@{/sponsors}" th:classappend="${active == 'sponsors'} ? 'active'">Sponsors</a>
-        <a th:href="@{/alerts}" th:classappend="${active == 'alerts'} ? 'active'">Alerts</a>
-    </nav>
+<header class="topbar" th:fragment="header(active)">
+    <div class="topbar-inner">
+        <a class="brand" th:href="@{/dashboard}">
+            <span class="brand-mark" aria-hidden="true">ES</span>
+            <span class="brand-text">Event Sponsorship <span>Tracker</span></span>
+        </a>
+        <nav class="nav" aria-label="Main navigation">
+            <a th:href="@{/dashboard}" th:classappend="${active == 'dashboard'} ? 'active'"
+               th:aria-current="${active == 'dashboard'} ? 'page'">
+                <svg th:replace="~{fragments/icons :: dashboard}"></svg>Dashboard</a>
+            <a th:href="@{/events}" th:classappend="${active == 'events'} ? 'active'"
+               th:aria-current="${active == 'events'} ? 'page'">
+                <svg th:replace="~{fragments/icons :: calendar}"></svg>Events</a>
+            <a th:href="@{/sponsors}" th:classappend="${active == 'sponsors'} ? 'active'"
+               th:aria-current="${active == 'sponsors'} ? 'page'">
+                <svg th:replace="~{fragments/icons :: users}"></svg>Sponsors</a>
+            <a th:href="@{/alerts}" th:classappend="${active == 'alerts'} ? 'active'"
+               th:aria-current="${active == 'alerts'} ? 'page'">
+                <svg th:replace="~{fragments/icons :: alert}"></svg>Alerts</a>
+        </nav>
+        <div class="topbar-actions">
+            <a class="btn btn-primary btn-sm" th:href="@{/events/new}">
+                <svg th:replace="~{fragments/icons :: plus}"></svg>New Event</a>
+        </div>
+    </div>
 </header>
 </body>
 </html>
