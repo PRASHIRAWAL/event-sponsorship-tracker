@@ -181,4 +181,4 @@ The repository adheres to a strict Git branching policy:
 
 ## Project Status
 
-**Current milestone:** Task 6 – Sponsor dashboard and alerts implemented.
+**Current milestone:** Task 6 – Sponsor management, dashboard and alerts implemented.
