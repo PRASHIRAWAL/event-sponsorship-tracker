@@ -153,3 +153,8 @@ The repository adheres to a strict Git branching policy:
 - `feature/sponsorship-management`
 - `feature/dashboard-summary`
 - `feature/exception-view`
+
+
+## Project Status
+
+**Current milestone:** Task 5 – Event management merged into development.
