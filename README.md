@@ -157,4 +157,4 @@ The repository adheres to a strict Git branching policy:
 
 ## Project Status
 
-**Current milestone:** Task 5 – Event management merged into development.
+**Current milestone:** Task 6 – Sponsor management and dashboard completed.
