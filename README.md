@@ -5,6 +5,11 @@ The **Containerized Event Sponsorship Tracker** is a comprehensive DevOps-driven
 
 ---
 
+## Project Status
+**Current milestone:** Task 6 – MVP baseline (event management, sponsor management, searchable dashboard, status drill-down and alerts). See the [project backlog](docs/BACKLOG.md) for completed and remaining work.
+
+---
+
 ## Student Details
 - **Student Name:** Prashi Rawal
 - **Roll Number:** 23102C0067
@@ -122,6 +127,25 @@ mvn spring-boot:run
 ### 4. Application Access URLs
 - **Web Interface:** [http://localhost:8080](http://localhost:8080)
 - **Health Check Endpoint:** [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
+
+### 5. Application Pages
+| Page | URL |
+|---|---|
+| Dashboard (summary, search, status drill-down) | `/dashboard` |
+| Events (list, search, filter by Upcoming/Past) | `/events` |
+| Event details with linked sponsors | `/events/{id}` |
+| Sponsors (list, search, filter by status/event) | `/sponsors` |
+| Alerts & exceptions | `/alerts` |
+
+### 6. REST API
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET / POST | `/api/events` | List or create events |
+| GET / PUT | `/api/events/{id}` | Get or update an event |
+| GET / POST | `/api/sponsors` | List (optional `q`, `status`, `eventId` filters) or create sponsors |
+| GET / PUT | `/api/sponsors/{id}` | Get or update a sponsor |
+| GET | `/api/dashboard/summary` | Dashboard indicators |
+| GET | `/api/dashboard/exceptions` | Current alerts |
 
 ---
 
