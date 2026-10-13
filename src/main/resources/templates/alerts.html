@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Alerts | Event Sponsorship Tracker</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header th:replace="~{fragments/header :: header('alerts')}"></header>
+
+<main class="container">
+    <h1>Alerts &amp; Exceptions</h1>
+
+    <p class="alert alert-success" id="no-alerts" th:if="${#lists.isEmpty(alerts)}">
+        No issues found. All events and sponsors pass the checks below.
+    </p>
+
+    <div class="table-wrapper" th:unless="${#lists.isEmpty(alerts)}">
+        <table id="alerts-table">
+            <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Type</th>
+                <th>Item</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="alert : ${alerts}">
+                <td th:text="${alert.rule().title}">Missing contact person</td>
+                <td th:text="${alert.subjectType() == 'EVENT'} ? 'Event' : 'Sponsor'">Sponsor</td>
+                <td th:text="${alert.subjectName()}">Acme Corp</td>
+                <td>
+                    <a class="button button-small" th:if="${alert.subjectType() == 'EVENT'}"
+                       th:href="@{/events/{id}(id=${alert.subjectId()})}">View Event</a>
+                    <a class="button button-small" th:if="${alert.subjectType() == 'SPONSOR'}"
+                       th:href="@{/sponsors/{id}/edit(id=${alert.subjectId()})}">Fix Sponsor</a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>Rules Applied</h2>
+    <p class="muted">Cancelled sponsorships are excluded from all sponsor checks.</p>
+    <ul class="rule-list" id="alert-rules">
+        <li th:each="rule : ${rules}">
+            <strong th:text="${rule.title}">Rule</strong>:
+            <span th:text="${rule.description}">Description</span>
+        </li>
+    </ul>
+</main>
+</body>
+</html>

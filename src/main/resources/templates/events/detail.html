@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${event.name} + ' | Event Sponsorship Tracker'">Event | Event Sponsorship Tracker</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header th:replace="~{fragments/header :: header('events')}"></header>
+
+<main class="container">
+    <div class="page-heading">
+        <h1 th:text="${event.name}">Tech Fest</h1>
+        <div class="actions">
+            <a class="button button-secondary" th:href="@{/events}">Back to Events</a>
+            <a class="button" id="edit-event" th:href="@{/events/{id}/edit(id=${event.id})}">Edit Event</a>
+        </div>
+    </div>
+
+    <dl class="details" id="event-details">
+        <dt>Status</dt>
+        <dd><span class="badge" th:classappend="${'badge-' + #strings.toLowerCase(event.status.name())}"
+                  th:text="${event.status.label}">Upcoming</span></dd>
+        <dt>Date</dt>
+        <dd th:text="${#temporals.format(event.eventDate, 'dd MMM yyyy')}">05 Nov 2026</dd>
+        <dt>Venue</dt>
+        <dd th:text="${event.venue}">Main Auditorium</dd>
+        <dt>Description</dt>
+        <dd th:text="${event.description ?: '—'}">Annual technical festival</dd>
+        <dt>Committed sponsorship</dt>
+        <dd id="event-committed-amount"
+            th:text="${#numbers.formatDecimal(committedAmount, 1, 'COMMA', 2, 'POINT')}">0.00</dd>
+    </dl>
+
+    <div class="page-heading section-heading">
+        <h2>Sponsors</h2>
+        <a class="button" id="add-sponsor" th:href="@{/sponsors/new(eventId=${event.id})}">+ Add Sponsor</a>
+    </div>
+
+    <p class="empty-state" th:if="${#lists.isEmpty(sponsors)}">No sponsors are linked to this event yet.</p>
+
+    <div class="table-wrapper" th:unless="${#lists.isEmpty(sponsors)}">
+        <table id="event-sponsors-table">
+            <thead>
+            <tr>
+                <th>Sponsor</th>
+                <th>Contact Person</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="sponsor : ${sponsors}">
+                <td th:text="${sponsor.name}">Acme Corp</td>
+                <td th:text="${sponsor.contactPerson ?: '—'}">Jane Doe</td>
+                <td th:text="${sponsor.sponsorshipAmount == null} ? '—' : ${#numbers.formatDecimal(sponsor.sponsorshipAmount, 1, 'COMMA', 2, 'POINT')}">50,000.00</td>
+                <td><span class="badge" th:classappend="${'badge-' + #strings.toLowerCase(sponsor.sponsorshipStatus.name())}"
+                          th:text="${sponsor.sponsorshipStatus.label}">Confirmed</span></td>
+                <td><a class="button button-small" th:href="@{/sponsors/{id}/edit(id=${sponsor.id})}">Edit</a></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+</body>
+</html>

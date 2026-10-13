@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sponsors | Event Sponsorship Tracker</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header th:replace="~{fragments/header :: header('sponsors')}"></header>
+
+<main class="container">
+    <div class="page-heading">
+        <h1>Sponsors</h1>
+        <a class="button" id="create-sponsor" th:href="@{/sponsors/new}">+ Add Sponsor</a>
+    </div>
+
+    <p class="alert alert-success" id="success-message"
+       th:if="${successMessage}" th:text="${successMessage}">Saved.</p>
+
+    <form class="search-form" id="sponsor-search" method="get" th:action="@{/sponsors}">
+        <input type="search" name="q" th:value="${q}" placeholder="Search by name, contact or email"
+               aria-label="Search sponsors">
+        <select name="status" aria-label="Filter by status">
+            <option value="">All statuses</option>
+            <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.label}"
+                    th:selected="${s == status}">Confirmed</option>
+        </select>
+        <select name="eventId" aria-label="Filter by event">
+            <option value="">All events</option>
+            <option th:each="e : ${events}" th:value="${e.id}" th:text="${e.name}"
+                    th:selected="${e.id == eventId}">Tech Fest</option>
+        </select>
+        <button type="submit" class="button">Search</button>
+        <a class="button button-secondary" th:if="${filtered}" th:href="@{/sponsors}">Clear</a>
+    </form>
+
+    <p class="empty-state" th:if="${#lists.isEmpty(sponsors) and !filtered}">
+        No sponsors yet. Click <strong>Add Sponsor</strong> to add the first one.
+    </p>
+
+    <p class="empty-state" th:if="${#lists.isEmpty(sponsors) and filtered}">
+        No sponsors match your search.
+    </p>
+
+    <div class="table-wrapper" th:unless="${#lists.isEmpty(sponsors)}">
+        <table id="sponsors-table">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Sponsor</th>
+                <th>Contact Person</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Event</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="sponsor : ${sponsors}">
+                <td th:text="${sponsor.id}">1</td>
+                <td th:text="${sponsor.name}">Acme Corp</td>
+                <td th:text="${sponsor.contactPerson ?: '—'}">Jane Doe</td>
+                <td th:text="${sponsor.email ?: '—'}">jane@acme.com</td>
+                <td th:text="${sponsor.phone ?: '—'}">+91 98765 43210</td>
+                <td>
+                    <a th:if="${sponsor.event != null}" th:href="@{/events/{id}(id=${sponsor.event.id})}"
+                       th:text="${sponsor.event.name}">Tech Fest</a>
+                    <span th:if="${sponsor.event == null}" class="muted">Not linked</span>
+                </td>
+                <td th:text="${sponsor.sponsorshipAmount == null} ? '—' : ${#numbers.formatDecimal(sponsor.sponsorshipAmount, 1, 'COMMA', 2, 'POINT')}">50,000.00</td>
+                <td><span class="badge" th:classappend="${'badge-' + #strings.toLowerCase(sponsor.sponsorshipStatus.name())}"
+                          th:text="${sponsor.sponsorshipStatus.label}">Confirmed</span></td>
+                <td><a class="button button-small" th:href="@{/sponsors/{id}/edit(id=${sponsor.id})}">Edit</a></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+</body>
+</html>

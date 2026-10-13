@@ -7,9 +7,7 @@
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-<header class="site-header">
-    <a class="brand" th:href="@{/events}">Event Sponsorship Tracker</a>
-</header>
+<header th:replace="~{fragments/header :: header('')}"></header>
 
 <main class="container narrow">
     <h1>Page not found</h1>

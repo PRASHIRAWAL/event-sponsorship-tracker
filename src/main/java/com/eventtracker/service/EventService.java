@@ -1,10 +1,15 @@
 package com.eventtracker.service;
 
 import com.eventtracker.model.Event;
+import com.eventtracker.model.EventStatus;
 import com.eventtracker.repository.EventRepository;
+import com.eventtracker.repository.EventSpecifications;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -19,6 +24,14 @@ public class EventService {
 
     public List<Event> findAll() {
         return eventRepository.findAllByOrderByEventDateAscIdAsc();
+    }
+
+    /** Searches by keyword (name or venue) and derived status; null or blank filters are ignored. */
+    public List<Event> search(String keyword, EventStatus status) {
+        Specification<Event> specification = Specification
+                .where(EventSpecifications.matchesKeyword(keyword))
+                .and(EventSpecifications.hasStatus(status, LocalDate.now()));
+        return eventRepository.findAll(specification, Sort.by("eventDate", "id"));
     }
 
     public Event findById(Long id) {

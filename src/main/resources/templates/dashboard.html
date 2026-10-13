@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard | Event Sponsorship Tracker</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header th:replace="~{fragments/header :: header('dashboard')}"></header>
+
+<main class="container">
+    <h1>Dashboard</h1>
+
+    <form class="search-form" id="dashboard-search" method="get" th:action="@{/dashboard}">
+        <input type="search" name="q" th:value="${q}" placeholder="Search events and sponsors"
+               aria-label="Search events and sponsors">
+        <button type="submit" class="button">Search</button>
+        <a class="button button-secondary" th:if="${q != null}" th:href="@{/dashboard}">Clear</a>
+    </form>
+
+    <section id="search-results" th:if="${q != null}">
+        <h2 th:text="|Search results for &quot;${q}&quot;|">Search results</h2>
+
+        <h3 th:text="|Events (${#lists.size(eventResults)})|">Events</h3>
+        <p class="empty-state" th:if="${#lists.isEmpty(eventResults)}">No matching events.</p>
+        <ul class="result-list" th:unless="${#lists.isEmpty(eventResults)}">
+            <li th:each="event : ${eventResults}">
+                <a th:href="@{/events/{id}(id=${event.id})}" th:text="${event.name}">Tech Fest</a>
+                <span class="muted"
+                      th:text="|${#temporals.format(event.eventDate, 'dd MMM yyyy')} · ${event.venue}|">05 Nov 2026</span>
+            </li>
+        </ul>
+
+        <h3 th:text="|Sponsors (${#lists.size(sponsorResults)})|">Sponsors</h3>
+        <p class="empty-state" th:if="${#lists.isEmpty(sponsorResults)}">No matching sponsors.</p>
+        <ul class="result-list" th:unless="${#lists.isEmpty(sponsorResults)}">
+            <li th:each="sponsor : ${sponsorResults}">
+                <a th:href="@{/sponsors/{id}/edit(id=${sponsor.id})}" th:text="${sponsor.name}">Acme Corp</a>
+                <span class="badge" th:classappend="${'badge-' + #strings.toLowerCase(sponsor.sponsorshipStatus.name())}"
+                      th:text="${sponsor.sponsorshipStatus.label}">Confirmed</span>
+            </li>
+        </ul>
+    </section>
+
+    <section class="cards" id="summary-cards">
+        <a class="card" th:href="@{/events}">
+            <span class="card-label">Total Events</span>
+            <span class="card-value" id="total-events" th:text="${summary.totalEvents()}">0</span>
+        </a>
+        <a class="card" th:href="@{/events(status='UPCOMING')}">
+            <span class="card-label">Upcoming Events</span>
+            <span class="card-value" id="upcoming-events" th:text="${summary.upcomingEvents()}">0</span>
+        </a>
+        <a class="card" th:href="@{/events(status='PAST')}">
+            <span class="card-label">Past Events</span>
+            <span class="card-value" id="past-events" th:text="${summary.pastEvents()}">0</span>
+        </a>
+        <a class="card" th:href="@{/sponsors}">
+            <span class="card-label">Total Sponsors</span>
+            <span class="card-value" id="total-sponsors" th:text="${summary.totalSponsors()}">0</span>
+        </a>
+        <div class="card">
+            <span class="card-label">Committed Amount</span>
+            <span class="card-value" id="committed-amount"
+                  th:text="${#numbers.formatDecimal(summary.committedAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</span>
+            <span class="card-note">Confirmed + Completed</span>
+        </div>
+        <div class="card">
+            <span class="card-label">Open Pipeline</span>
+            <span class="card-value" id="open-amount"
+                  th:text="${#numbers.formatDecimal(summary.openAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</span>
+            <span class="card-note">Proposed + Pending</span>
+        </div>
+        <a class="card" th:href="@{/alerts}" th:classappend="${summary.alertCount() > 0} ? 'card-warning'">
+            <span class="card-label">Open Alerts</span>
+            <span class="card-value" id="alert-count" th:text="${summary.alertCount()}">0</span>
+        </a>
+    </section>
+
+    <p class="muted" th:if="${summary.sponsorsWithoutAmount() > 0}" id="amount-note"
+       th:text="|Note: ${summary.sponsorsWithoutAmount()} sponsor(s) have no amount recorded and are not included in the totals.|">
+        Note</p>
+
+    <h2>Sponsorship Status</h2>
+    <p class="muted">Click a count to see the sponsors with that status.</p>
+    <div class="table-wrapper">
+        <table id="status-table">
+            <thead>
+            <tr>
+                <th>Status</th>
+                <th>Sponsors</th>
+                <th>Recorded Amount</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="row : ${summary.sponsorsByStatus()}">
+                <td><span class="badge" th:classappend="${'badge-' + #strings.toLowerCase(row.status().name())}"
+                          th:text="${row.status().label}">Confirmed</span></td>
+                <td><a th:href="@{/sponsors(status=${row.status()})}" th:text="${row.count()}">0</a></td>
+                <td th:text="${#numbers.formatDecimal(row.totalAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+</body>
+</html>

@@ -1,5 +1,6 @@
 package com.eventtracker.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -89,5 +90,11 @@ public class Event {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    /** Derived from the event date; not stored in the database and not part of the API response. */
+    @JsonIgnore
+    public EventStatus getStatus() {
+        return EventStatus.of(eventDate, LocalDate.now());
     }
 }
