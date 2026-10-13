@@ -7,9 +7,7 @@
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-<header class="site-header">
-    <a class="brand" th:href="@{/events}">Event Sponsorship Tracker</a>
-</header>
+<header th:replace="~{fragments/header :: header('events')}"></header>
 
 <main class="container">
     <div class="page-heading">
@@ -20,8 +18,23 @@
     <p class="alert alert-success" id="success-message"
        th:if="${successMessage}" th:text="${successMessage}">Saved.</p>
 
-    <p class="empty-state" th:if="${#lists.isEmpty(events)}">
+    <form class="search-form" id="event-search" method="get" th:action="@{/events}">
+        <input type="search" name="q" th:value="${q}" placeholder="Search by name or venue" aria-label="Search events">
+        <select name="status" aria-label="Filter by status">
+            <option value="">All statuses</option>
+            <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.label}"
+                    th:selected="${s == status}">Upcoming</option>
+        </select>
+        <button type="submit" class="button">Search</button>
+        <a class="button button-secondary" th:if="${filtered}" th:href="@{/events}">Clear</a>
+    </form>
+
+    <p class="empty-state" th:if="${#lists.isEmpty(events) and !filtered}">
         No events yet. Click <strong>Create Event</strong> to add the first one.
+    </p>
+
+    <p class="empty-state" th:if="${#lists.isEmpty(events) and filtered}">
+        No events match your search.
     </p>
 
     <div class="table-wrapper" th:unless="${#lists.isEmpty(events)}">
@@ -33,17 +46,23 @@
                 <th>Date</th>
                 <th>Venue</th>
                 <th>Description</th>
+                <th>Status</th>
                 <th>Actions</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="event : ${events}">
                 <td th:text="${event.id}">1</td>
-                <td th:text="${event.name}">Tech Fest</td>
+                <td><a th:href="@{/events/{id}(id=${event.id})}" th:text="${event.name}">Tech Fest</a></td>
                 <td th:text="${#temporals.format(event.eventDate, 'dd MMM yyyy')}">05 Nov 2026</td>
                 <td th:text="${event.venue}">Main Auditorium</td>
                 <td th:text="${event.description}">Annual technical festival</td>
-                <td><a class="button button-small" th:href="@{/events/{id}/edit(id=${event.id})}">Edit</a></td>
+                <td><span class="badge" th:classappend="${'badge-' + #strings.toLowerCase(event.status.name())}"
+                          th:text="${event.status.label}">Upcoming</span></td>
+                <td class="actions">
+                    <a class="button button-small button-secondary" th:href="@{/events/{id}(id=${event.id})}">View</a>
+                    <a class="button button-small" th:href="@{/events/{id}/edit(id=${event.id})}">Edit</a>
+                </td>
             </tr>
             </tbody>
         </table>

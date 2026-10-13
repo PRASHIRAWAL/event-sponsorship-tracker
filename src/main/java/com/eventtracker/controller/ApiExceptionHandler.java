@@ -1,6 +1,8 @@
 package com.eventtracker.controller;
 
 import com.eventtracker.service.EventNotFoundException;
+import com.eventtracker.service.InvalidEventReferenceException;
+import com.eventtracker.service.SponsorNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -13,7 +15,8 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@RestControllerAdvice(assignableTypes = EventApiController.class)
+@RestControllerAdvice(assignableTypes = {
+        EventApiController.class, SponsorApiController.class, DashboardApiController.class})
 public class ApiExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -30,7 +33,20 @@ public class ApiExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ProblemDetail handleUnreadableBody(HttpMessageNotReadableException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
-                "Malformed request body. Check the JSON syntax and use the yyyy-MM-dd format for eventDate.");
+                "Malformed request body. Check the JSON syntax, use the yyyy-MM-dd format for dates "
+                        + "and one of the allowed values for status fields.");
+    }
+
+    @ExceptionHandler(InvalidEventReferenceException.class)
+    public ProblemDetail handleInvalidEventReference(InvalidEventReferenceException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed");
+        problem.setProperty("errors", Map.of("eventId", InvalidEventReferenceException.MESSAGE));
+        return problem;
+    }
+
+    @ExceptionHandler(SponsorNotFoundException.class)
+    public ProblemDetail handleSponsorNotFound(SponsorNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)

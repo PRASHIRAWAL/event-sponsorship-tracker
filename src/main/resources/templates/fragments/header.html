@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Shared site header. Usage: <header th:replace="~{fragments/header :: header('events')}"></header> -->
+<header class="site-header" th:fragment="header(active)">
+    <a class="brand" th:href="@{/dashboard}">Event Sponsorship Tracker</a>
+    <nav class="site-nav">
+        <a th:href="@{/dashboard}" th:classappend="${active == 'dashboard'} ? 'active'">Dashboard</a>
+        <a th:href="@{/events}" th:classappend="${active == 'events'} ? 'active'">Events</a>
+        <a th:href="@{/sponsors}" th:classappend="${active == 'sponsors'} ? 'active'">Sponsors</a>
+        <a th:href="@{/alerts}" th:classappend="${active == 'alerts'} ? 'active'">Alerts</a>
+    </nav>
+</header>
+</body>
+</html>
