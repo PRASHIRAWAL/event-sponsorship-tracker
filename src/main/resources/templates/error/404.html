@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Not Found | Event Sponsorship Tracker</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header class="site-header">
+    <a class="brand" th:href="@{/events}">Event Sponsorship Tracker</a>
+</header>
+
+<main class="container narrow">
+    <h1>Page not found</h1>
+    <p>The page or event you requested does not exist.</p>
+    <a class="button" th:href="@{/events}">Back to Events</a>
+</main>
+</body>
+</html>

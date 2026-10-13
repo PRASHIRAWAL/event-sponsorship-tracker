@@ -1,0 +1,192 @@
+:root {
+    --primary: #1f5fae;
+    --primary-dark: #174a88;
+    --text: #1f2933;
+    --muted: #616e7c;
+    --border: #d9e2ec;
+    --background: #f5f7fa;
+    --error: #c62828;
+    --success-bg: #e3f6e8;
+    --success-text: #1b6b34;
+    --error-bg: #fdecea;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: var(--text);
+    background: var(--background);
+}
+
+.site-header {
+    background: var(--primary);
+    padding: 14px 24px;
+}
+
+.brand {
+    color: #fff;
+    font-size: 1.15rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 32px auto;
+    padding: 0 16px;
+}
+
+.container.narrow {
+    max-width: 600px;
+}
+
+.page-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+h1 {
+    margin: 0 0 20px;
+}
+
+.page-heading h1 {
+    margin: 0;
+}
+
+.button {
+    display: inline-block;
+    padding: 9px 18px;
+    border: none;
+    border-radius: 6px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 0.95rem;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.button:hover {
+    background: var(--primary-dark);
+}
+
+.button-small {
+    padding: 5px 12px;
+    font-size: 0.85rem;
+}
+
+.button-secondary {
+    background: #fff;
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+.button-secondary:hover {
+    background: var(--background);
+}
+
+.alert {
+    margin: 20px 0;
+    padding: 12px 16px;
+    border-radius: 6px;
+}
+
+.alert-success {
+    background: var(--success-bg);
+    color: var(--success-text);
+}
+
+.alert-error {
+    background: var(--error-bg);
+    color: var(--error);
+}
+
+.empty-state {
+    margin-top: 24px;
+    color: var(--muted);
+}
+
+.table-wrapper {
+    margin-top: 20px;
+    overflow-x: auto;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+}
+
+th {
+    background: #eef2f7;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+}
+
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+form {
+    background: #fff;
+    padding: 24px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.field {
+    margin-bottom: 18px;
+}
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.required {
+    color: var(--error);
+}
+
+input,
+textarea {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font: inherit;
+}
+
+input.invalid,
+textarea.invalid {
+    border-color: var(--error);
+}
+
+.field-error {
+    margin: 6px 0 0;
+    color: var(--error);
+    font-size: 0.9rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+}
