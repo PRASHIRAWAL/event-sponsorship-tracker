@@ -154,7 +154,7 @@ mvn spring-boot:run
 2. **Source Control:** Git branching model with pull requests targeting `development`.
 3. **Continuous Integration (Jenkins):** Automated triggers on push to compile, test, and build JAR. Pipeline defined in [`Jenkinsfile`](Jenkinsfile); setup steps in [`docs/JENKINS_SETUP.md`](docs/JENKINS_SETUP.md).
 4. **Automated Testing:** Selenium end-to-end tests verifying UI flows and validations (`mvn -B -Pe2e verify`; see [`docs/SELENIUM_E2E.md`](docs/SELENIUM_E2E.md)).
-5. **Containerization:** Docker container image generation for the Spring Boot app and Nginx.
+5. **Containerization:** Docker container image generation for the Spring Boot app and Nginx (deployed by the Jenkins pipeline; see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)).
 6. **Configuration & Deployment:** Ansible playbooks orchestrating multi-container deployment.
 
 ---

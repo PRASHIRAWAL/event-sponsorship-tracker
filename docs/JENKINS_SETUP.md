@@ -1,6 +1,6 @@
 # Jenkins CI Setup
 
-The `Jenkinsfile` at the repository root defines a declarative pipeline with four stages:
+The `Jenkinsfile` at the repository root defines a declarative pipeline with these stages:
 
 | Stage | Command | Result |
 |---|---|---|
@@ -9,6 +9,11 @@ The `Jenkinsfile` at the repository root defines a declarative pipeline with fou
 | Test | `mvn -B test` | Runs all unit and integration tests; JUnit report published |
 | E2E Tests | `mvn -B -Pe2e verify` | Runs Selenium browser tests in headless Chrome (see `SELENIUM_E2E.md`) |
 | Package | `mvn -B package -DskipTests` | Builds the JAR and archives it as a build artifact |
+| Docker Image | `docker build` (app + Nginx) | Images tagged with the build number; only when `DEPLOY` is ticked |
+| Deploy | `docker run` | Replaces `eventtracker-app` (port `APP_PORT`, default 8081) and `eventtracker-nginx` (port `NGINX_PORT`, default 80) |
+| Verify Deployment | `curl` health checks | Requires `/actuator/health` = `UP` directly and through Nginx; archives `health-*.json` |
+
+Deployment setup (MySQL user, `eventtracker-db` credential, rollback) is described in [`DEPLOYMENT.md`](DEPLOYMENT.md).
 
 Tests run against the in-memory H2 database (`application-test.properties`, `test` profile), so the Jenkins agent does **not** need MySQL. The pipeline works on both Windows and Linux agents (`bat` / `sh` chosen automatically).
 
