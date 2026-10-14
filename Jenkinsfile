@@ -37,6 +37,7 @@ pipeline {
         NGINX_PORT      = "${params.NGINX_PORT ?: '80'}"
         DOCKER_BIN      = 'C:\\Users\\Windows\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin'
         APP_IMAGE       = 'event-sponsorship-tracker'
+        DOCKERHUB_IMAGE = 'prashirawal/event-sponsorship-tracker'
         NGINX_IMAGE     = 'eventtracker-nginx'
         APP_CONTAINER   = 'eventtracker-app'
         NGINX_CONTAINER = 'eventtracker-nginx'
@@ -95,11 +96,38 @@ pipeline {
             when { expression { params.DEPLOY != false } }
             steps {
                 withEnv(["PATH+DOCKER=${env.DOCKER_BIN}"]) {
-                    runCommand("docker build -t ${env.APP_IMAGE}:${env.BUILD_NUMBER} -t ${env.APP_IMAGE}:latest .")
-                    runCommand("docker build -t ${env.NGINX_IMAGE}:${env.BUILD_NUMBER} -t ${env.NGINX_IMAGE}:latest deploy/nginx")
+                    withCredentials([usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKERHUB_USER',
+                        passwordVariable: 'DOCKERHUB_TOKEN'
+                    )]) {
+                        script {
+                            if (isUnix()) {
+                                sh '''
+                                    set +x
+                                    echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USER" --password-stdin
+                                '''
+                            } else {
+                                bat '''
+                                    @echo off
+                                    powershell -NoProfile -NonInteractive -Command "$env:DOCKERHUB_TOKEN | docker login --username $env:DOCKERHUB_USER --password-stdin; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }"
+                                '''
+                            }
+
+                            runCommand("docker build -t ${env.DOCKERHUB_IMAGE}:${env.BUILD_NUMBER} -t ${env.DOCKERHUB_IMAGE}:latest .")
+                            runCommand("docker build -t ${env.DOCKERHUB_IMAGE}-nginx:${env.BUILD_NUMBER} -t ${env.DOCKERHUB_IMAGE}-nginx:latest deploy/nginx")
+
+                            runCommand("docker push ${env.DOCKERHUB_IMAGE}:${env.BUILD_NUMBER}")
+                            runCommand("docker push ${env.DOCKERHUB_IMAGE}:latest")
+                            runCommand("docker push ${env.DOCKERHUB_IMAGE}-nginx:${env.BUILD_NUMBER}")
+                            runCommand("docker push ${env.DOCKERHUB_IMAGE}-nginx:latest")
+                            runCommand("docker logout")
+                        }
+                    }
                 }
             }
         }
+
 
         stage('Deploy') {
             when { expression { params.DEPLOY != false } }
@@ -115,22 +143,46 @@ pipeline {
                 // this pipeline never runs any command against the MySQL container.
                 withEnv(["PATH+DOCKER=${env.DOCKER_BIN}",
                          'DB_URL=jdbc:mysql://host.docker.internal:3306/eventsponsorship_db']) {
-                    withCredentials([usernamePassword(credentialsId: 'eventtracker-db',
-                            usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
+                    withCredentials([
+                        usernamePassword(credentialsId: 'eventtracker-db',
+                            usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD'),
+                        usernamePassword(credentialsId: 'dockerhub-credentials',
+                            usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_TOKEN')
+                    ]) {
                         script {
                             if (runStatus("docker network inspect ${env.DEPLOY_NETWORK}") != 0) {
                                 runCommand("docker network create ${env.DEPLOY_NETWORK}")
                             }
+
+                            // Log in to Docker Hub without printing the token.
+                            if (isUnix()) {
+                                sh '''
+                                    set +x
+                                    echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USER" --password-stdin
+                                '''
+                            } else {
+                                bat '''
+                                    @echo off
+                                    powershell -NoProfile -NonInteractive -Command "$env:DOCKERHUB_TOKEN | docker login --username $env:DOCKERHUB_USER --password-stdin; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }"
+                                '''
+                            }
+
+                            runCommand("docker pull ${env.DOCKERHUB_IMAGE}:${env.BUILD_NUMBER}")
+                            runCommand("docker pull ${env.DOCKERHUB_IMAGE}-nginx:${env.BUILD_NUMBER}")
+
+                            runCommand("docker logout")
+
                             // Replace only this project's app and proxy containers.
                             runStatus("docker rm -f ${env.NGINX_CONTAINER}")
                             runStatus("docker rm -f ${env.APP_CONTAINER}")
-                            // "-e NAME" without a value copies the variable from this step's environment,
-                            // so the password never appears in the command line or the console log.
+
+                            // Pass database credentials through environment variables.
                             runCommand("docker run -d --name ${env.APP_CONTAINER} --network ${env.DEPLOY_NETWORK} " +
                                     "--restart unless-stopped -p ${env.APP_PORT}:8080 " +
-                                    "-e DB_URL -e DB_USERNAME -e DB_PASSWORD ${env.APP_IMAGE}:${env.BUILD_NUMBER}")
+                                    "-e DB_URL -e DB_USERNAME -e DB_PASSWORD ${env.DOCKERHUB_IMAGE}:${env.BUILD_NUMBER}")
+
                             runCommand("docker run -d --name ${env.NGINX_CONTAINER} --network ${env.DEPLOY_NETWORK} " +
-                                    "--restart unless-stopped -p ${env.NGINX_PORT}:80 ${env.NGINX_IMAGE}:${env.BUILD_NUMBER}")
+                                    "--restart unless-stopped -p ${env.NGINX_PORT}:80 ${env.DOCKERHUB_IMAGE}-nginx:${env.BUILD_NUMBER}")
                         }
                     }
                 }
