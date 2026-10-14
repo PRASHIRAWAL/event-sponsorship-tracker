@@ -44,6 +44,19 @@ pipeline {
             }
         }
 
+        stage('E2E Tests') {
+            // Selenium tests in headless Chrome (Chrome must be installed on the agent).
+            steps {
+                runCommand('mvn -B -Pe2e verify')
+            }
+            post {
+                always {
+                    junit testResults: 'target/failsafe-reports/*.xml', allowEmptyResults: false
+                    archiveArtifacts artifacts: 'target/e2e-screenshots/*.png', allowEmptyArchive: true
+                }
+            }
+        }
+
         stage('Package') {
             steps {
                 runCommand('mvn -B package -DskipTests')

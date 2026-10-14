@@ -7,6 +7,7 @@ The `Jenkinsfile` at the repository root defines a declarative pipeline with fou
 | Checkout | `checkout scm` | Pulls the configured branch from GitHub |
 | Build | `mvn -B -V clean compile` | Compiles the Spring Boot application |
 | Test | `mvn -B test` | Runs all unit and integration tests; JUnit report published |
+| E2E Tests | `mvn -B -Pe2e verify` | Runs Selenium browser tests in headless Chrome (see `SELENIUM_E2E.md`) |
 | Package | `mvn -B package -DskipTests` | Builds the JAR and archives it as a build artifact |
 
 Tests run against the in-memory H2 database (`application-test.properties`, `test` profile), so the Jenkins agent does **not** need MySQL. The pipeline works on both Windows and Linux agents (`bat` / `sh` chosen automatically).
