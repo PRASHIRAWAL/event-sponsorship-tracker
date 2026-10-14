@@ -1,0 +1,51 @@
+TASK 14 - FINAL VALIDATION EVIDENCE
+Wed Oct 14 12:30:54 UTC 2026
+
+=== APPLICATION CONTAINER ===
+NAMES        IMAGE                                      STATUS
+task14-app   prashirawal/event-sponsorship-tracker:11   Up 2 minutes
+
+=== APPLICATION HEALTH ===
+{"status":"UP","components":{"db":{"status":"UP","details":{"database":"MySQL","validationQuery":"isValid()"}},"diskSpace":{"status":"UP","details":{"total":1081101176832,"free":1021537128448,"threshold":10485760,"path":"/app/.","exists":true}},"ping":{"status":"UP"}}}
+
+=== FINAL IDEMPOTENCY RUN ===
+
+PLAY [Task 14 - Provision and deploy isolated test application] ****************
+
+TASK [Verify Docker CLI access] ************************************************
+ok: [localhost]
+
+TASK [Inspect isolated network] ************************************************
+ok: [localhost]
+
+TASK [Check test database container state] *************************************
+ok: [localhost]
+
+TASK [Start test database only when stopped] ***********************************
+skipping: [localhost]
+
+TASK [Inspect application container] *******************************************
+ok: [localhost]
+
+TASK [Check application container state] ***************************************
+ok: [localhost]
+
+TASK [Remove application container if image differs] ***************************
+skipping: [localhost]
+
+TASK [Deploy application if missing or image differs] **************************
+skipping: [localhost]
+
+TASK [Recover stopped application container] ***********************************
+skipping: [localhost]
+
+TASK [Wait for application health endpoint] ************************************
+ok: [localhost]
+
+TASK [Display health result] ***************************************************
+ok: [localhost] => {
+    "msg": "Application health: UP"
+}
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=7    changed=0    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0

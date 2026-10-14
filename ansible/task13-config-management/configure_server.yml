@@ -1,0 +1,97 @@
+---
+- name: Configure Event Sponsorship Tracker prerequisites
+  hosts: app_servers
+  become: true
+  gather_facts: true
+
+  vars:
+    app_user: eventtracker
+    app_group: eventtracker
+    app_root: /opt/event-sponsorship-tracker
+    app_log_dir: /var/log/event-sponsorship-tracker
+    app_config_dir: /etc/event-sponsorship-tracker
+
+    required_packages:
+      - curl
+      - ca-certificates
+      - unzip
+      - nginx
+
+    application_ports:
+      - "80: Nginx reverse proxy"
+      - "8081: Spring Boot application published by Docker"
+      - "3306: MySQL published by Docker"
+
+  tasks:
+    - name: Install prerequisite packages
+      ansible.builtin.apt:
+        name: "{{ required_packages }}"
+        state: present
+        update_cache: true
+
+    - name: Create application service group
+      ansible.builtin.group:
+        name: "{{ app_group }}"
+        state: present
+
+    - name: Create application service user
+      ansible.builtin.user:
+        name: "{{ app_user }}"
+        group: "{{ app_group }}"
+        system: true
+        create_home: false
+        shell: /usr/sbin/nologin
+        state: present
+
+    - name: Create application directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - path: "{{ app_root }}"
+          mode: "0750"
+        - path: "{{ app_log_dir }}"
+          mode: "0750"
+        - path: "{{ app_config_dir }}"
+          mode: "0750"
+
+    - name: Create deployment specification
+      ansible.builtin.copy:
+        dest: "{{ app_config_dir }}/deployment-spec.txt"
+        owner: root
+        group: "{{ app_group }}"
+        mode: "0640"
+        content: |
+          Application: Event Sponsorship Tracker
+          Deployment: Docker containers managed by Jenkins
+          Application container: eventtracker-app
+          Nginx container: eventtracker-nginx
+          MySQL container: eventtracker-mysql
+          Docker network: eventtracker-net
+          Spring Boot container port: 8080
+          Application host port: 8081
+          Nginx host port: 80
+          MySQL host port: 3306
+          Health endpoint: /actuator/health
+          Dashboard endpoint: /dashboard
+          Note: Ports describe the existing Windows Docker deployment.
+          This WSL playbook does not start or reconfigure those containers.
+
+    - name: Check Nginx package installation
+      ansible.builtin.command: nginx -v
+      register: nginx_version
+      changed_when: false
+
+    - name: Display configuration summary
+      ansible.builtin.debug:
+        msg:
+          - "Configuration completed on {{ inventory_hostname }}"
+          - "Service user: {{ app_user }}"
+          - "Application directory: {{ app_root }}"
+          - "Log directory: {{ app_log_dir }}"
+          - "Configuration directory: {{ app_config_dir }}"
+          - "Expected deployment ports: {{ application_ports }}"
+          - "Nginx check: {{ nginx_version.stderr }}"
