@@ -16,7 +16,7 @@ class EventIT extends BaseE2ETest {
 
         open("/events");
         waitFor(By.id("create-event")).click();
-        assertThat(pageTitle()).isEqualTo("Create Event Defect");
+        assertThat(pageTitle()).isEqualTo("Create Event");
 
         type(By.id("name"), name);
         setDate(By.id("eventDate"), LocalDate.now().plusMonths(2));
