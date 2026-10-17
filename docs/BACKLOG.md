@@ -1,6 +1,6 @@
 # Project Backlog – Event Sponsorship Tracker
 
-Status of the 15 approved MVP features (see README) after Task 6, plus the remaining DevOps work.
+Status of the 15 approved MVP features (see README) after the v2 feature release, plus the remaining work.
 
 Legend: ✅ Done · 🟡 Partly done · ⬜ Not started
 
@@ -8,36 +8,37 @@ Legend: ✅ Done · 🟡 Partly done · ⬜ Not started
 
 | # | Feature | Status | Notes |
 |---|---|---|---|
-| 1 | Create Event | ✅ | Task 5. Name, date, venue, description (Task 3 data model). A sponsorship target per event is not stored yet. |
+| 1 | Create Event | ✅ | Task 5. Name, date, venue, description. v2: optional sponsorship target with funding progress. |
 | 2 | Create Sponsor | ✅ | Task 6. Name, contact person, email, phone, amount, status, optional event link. |
 | 3 | Create Sponsorship Record | 🟡 | A sponsor record links to **one** event. A separate Sponsorship entity (one sponsor across many events, as in the Task 3 data model) is still to do. |
-| 4 | Record Sponsorship Amount | ✅ | Decimal amount (12 digits, 2 decimals). Currency tiers are not modelled. |
+| 4 | Record Sponsorship Amount | ✅ | Decimal amount (12 digits, 2 decimals). v2: sponsorship tiers (Platinum–Community). |
 | 5 | Track Sponsorship Status | ✅ | Proposed, Pending, Confirmed, Completed, Cancelled (Task 3 values). |
-| 6 | Track Payment Status | ⬜ | Not started (Pending/Partial/Paid/Overdue in Task 3). |
-| 7 | Update Sponsorship | ✅ | Edit sponsor page and `PUT /api/sponsors/{id}`. Tier allocations and remarks are not modelled. |
+| 6 | Track Payment Status | ✅ | v2. Payments per sponsor (amount, date, method, reference); derived Unpaid / Partially paid / Paid / Overdue status from amount, payments and due date. |
+| 7 | Update Sponsorship | ✅ | Edit sponsor page and `PUT /api/sponsors/{id}`. v2: tier, notes, due date; amount cannot drop below what was paid. |
 | 8 | Search Events | ✅ | Keyword (name or venue) plus Upcoming/Past filter. |
-| 9 | Search Sponsors | ✅ | Keyword (name, contact person or email) plus status and event filters. Industry/tier fields do not exist yet. |
-| 10 | Dashboard Summary | ✅ | Totals for events, sponsors, committed and open amounts, and open alerts. |
-| 11 | Sponsorship List | 🟡 | Filterable list is done; pagination and column sorting are still to do. |
+| 9 | Search Sponsors | ✅ | Keyword (name, contact, email or industry) plus status, event, tier and payment-status filters. |
+| 10 | Dashboard Summary | ✅ | Totals, collected/outstanding, target progress, status donut, tier chart, recent activity. Reports page with event funding. |
+| 11 | Sponsorship List | ✅ | v2. Pagination (10/25/50) and whitelisted column sorting on events and sponsors; CSV export. |
 | 12 | Status Drill-down | ✅ | Dashboard status counts link to filtered sponsor lists; event cards link to Upcoming/Past lists; event detail page lists its sponsors. |
-| 13 | Exception View | ✅ | `/alerts` page and `/api/dashboard/exceptions` (rules below). Overdue-payment alerts need feature 6. |
+| 13 | Exception View | ✅ | `/alerts` page (severity filter) and `/api/dashboard/exceptions` (rules below), most severe first. |
 | 14 | Input Validation | ✅ | Server-side Bean Validation with field messages, plus HTML5 client-side checks. |
 | 15 | Application Health Check | ✅ | Spring Boot Actuator `/actuator/health` including the database. |
 
 ## Remaining Work (Next Iterations)
 
-| Priority | Item |
-|---|---|
-| High | Payment status tracking and overdue-payment alert (feature 6) |
-| High | Separate Sponsorship entity so one sponsor can support several events (feature 3) |
-| High | Selenium end-to-end tests for the main UI flows |
-| High | Jenkins pipeline: build, test and package on every push |
-| High | Dockerfile and Docker Compose (application + MySQL), Nginx reverse proxy |
-| Medium | Ansible playbook for deployment |
-| Medium | Pagination and sorting on the event and sponsor lists (feature 11) |
-| Medium | Delete endpoints for events and sponsors |
-| Low | Event sponsorship target, sponsor industry/tier fields |
-| Low | Authentication and user roles |
+| Priority | Item | Status |
+|---|---|---|
+| High | Payment status tracking and overdue-payment alert (feature 6) | ✅ v2 |
+| High | Separate Sponsorship entity so one sponsor can support several events (feature 3) | ⬜ |
+| High | Selenium end-to-end tests for the main UI flows | ✅ (incl. payment flow in v2) |
+| High | Jenkins pipeline: build, test and package on every push | ✅ |
+| High | Dockerfile and Docker Compose (application + MySQL), Nginx reverse proxy | ✅ (`docker-compose.yml` in v2) |
+| Medium | Ansible playbook for deployment | ✅ |
+| Medium | Pagination and sorting on the event and sponsor lists (feature 11) | ✅ v2 |
+| Medium | Delete endpoints for events and sponsors | ✅ v2 |
+| Low | Event sponsorship target, sponsor industry/tier fields | ✅ v2 |
+| Low | Activity log / audit trail, CSV export, reports page, dark mode | ✅ v2 |
+| Low | Authentication and user roles | ⬜ |
 
 ## Alert Rules (Implemented)
 
@@ -52,6 +53,8 @@ Sponsors with status **Cancelled** are excluded from all sponsor checks.
 | Committed sponsorship without amount | Status is Confirmed or Completed but no amount is recorded. |
 | Undecided sponsorship for a past event | Status is Proposed or Pending and the linked event date has passed. |
 | Upcoming event without sponsors | An event dated today or later has no sponsors, or only cancelled ones. |
+| Payment overdue (v2, High) | A sponsorship still has an unpaid balance after its payment due date. |
+| Event below sponsorship target (v2, Medium) | An event in the next 30 days has less committed sponsorship than its target. |
 
 **Event status** is derived from the event date: today or later = Upcoming, earlier = Past.
 **Committed amount** = Confirmed + Completed; **open pipeline** = Proposed + Pending. Sponsors without an amount are not included in totals, and the dashboard shows how many there are.

@@ -6,7 +6,7 @@ The **Containerized Event Sponsorship Tracker** is a comprehensive DevOps-driven
 ---
 
 ## Project Status
-**Current milestone:** Task 6 – MVP baseline (event management, sponsor management, searchable dashboard, status drill-down and alerts). See the [project backlog](docs/BACKLOG.md) for completed and remaining work.
+**Current milestone:** v2 – payments, funding targets, tiers, reports, activity log, delete/export, pagination and a redesigned UI, on top of the Task 6 MVP and the Jenkins/Docker/Ansible pipeline. See the [project backlog](docs/BACKLOG.md) for completed and remaining work.
 
 ---
 
@@ -20,8 +20,8 @@ The **Containerized Event Sponsorship Tracker** is a comprehensive DevOps-driven
 
 ## Technology Stack
 - **Backend:** Java 21, Spring Boot 3.3.4 (Spring Web, Spring Data JPA, Actuator)
-- **Frontend:** Thymeleaf, HTML5, CSS3, JavaScript
-- **Database:** MySQL 8.x
+- **Frontend:** Thymeleaf, HTML5, CSS3 (light/dark themes, CSS-only charts), vanilla JavaScript
+- **Database:** MySQL 8.x (H2 in-memory for tests and the `dev` profile)
 - **Build & Dependency Management:** Apache Maven
 - **Version Control:** Git, GitHub
 - **Continuous Integration / Continuous Deployment:** Jenkins
@@ -61,6 +61,19 @@ Spring Boot Application (Port 8080)
 13. **Exception View:** Flag anomalous states such as overdue payments or unsigned contracts.
 14. **Input Validation:** Robust server-side and client-side validation rules.
 15. **Application Health Check:** Actuator-driven monitoring endpoint for liveness and readiness.
+
+### v2 Additions
+- **Payments:** record payments (amount, date, method, reference) per sponsor; amount paid, outstanding balance and a derived payment status (Unpaid, Partially paid, Paid, Overdue). Payments cannot exceed the outstanding balance, cannot be recorded for cancelled sponsorships, and a sponsor's amount cannot drop below what was already paid.
+- **Funding targets:** optional sponsorship target per event with progress bars on the dashboard, event list and event page.
+- **Sponsorship tiers & industry:** Platinum / Gold / Silver / Bronze / Community packages, industry field, payment due date and notes.
+- **New alert rules:** *Payment overdue* (High) and *Event below sponsorship target* within 30 days (Medium); alerts are sorted by severity and can be filtered.
+- **Delete:** events (sponsors are kept and unlinked) and sponsors (with their payments), behind a confirmation dialog; REST `DELETE` endpoints.
+- **Pagination & sorting:** event and sponsor lists with sortable columns (whitelisted), 10/25/50 rows per page.
+- **CSV export:** sponsors and event funding, respecting the current filters (formula-injection safe).
+- **Reports page:** event funding table with totals, tier donut chart, payments by method, top sponsors.
+- **Activity log:** audit trail of every create/update/delete/payment, shown on the dashboard, detail pages and `/activity`.
+- **Redesigned UI:** sidebar app shell, light/dark theme toggle, responsive tables, dashboard charts, keyboard shortcut `/` for search.
+- **Demo data & dev profile:** `APP_DEMO_DATA=true` seeds realistic sample data into an empty database.
 
 ---
 
@@ -121,7 +134,19 @@ mvn clean package
 
 ### 3. Run the Application Locally
 ```powershell
+# With MySQL (localhost:3306, or set DB_URL / DB_USERNAME / DB_PASSWORD)
 mvn spring-boot:run
+
+# Without MySQL: in-memory H2 database pre-filled with demo data
+mvn spring-boot:run "-Dspring-boot.run.profiles=dev"
+```
+
+### Run the full stack with Docker Compose (MySQL + app + Nginx)
+```powershell
+mvn -B package -DskipTests
+copy .env.example .env      # then set the passwords in .env
+docker compose up -d --build
+# http://localhost:8088 (Nginx) and http://localhost:8089 (app)
 ```
 
 ### 4. Application Access URLs
@@ -131,21 +156,30 @@ mvn spring-boot:run
 ### 5. Application Pages
 | Page | URL |
 |---|---|
-| Dashboard (summary, search, status drill-down) | `/dashboard` |
-| Events (list, search, filter by Upcoming/Past) | `/events` |
-| Event details with linked sponsors | `/events/{id}` |
-| Sponsors (list, search, filter by status/event) | `/sponsors` |
-| Alerts & exceptions | `/alerts` |
+| Dashboard (KPIs, funding progress, status/tier charts, alerts, recent activity) | `/dashboard` |
+| Events (search, Upcoming/Past filter, sorting, paging, funding, CSV export) | `/events` |
+| Event details (funding progress, linked sponsors, history, delete) | `/events/{id}` |
+| Sponsors (search, status/tier/payment/event filters, sorting, paging, CSV export) | `/sponsors` |
+| Sponsor details (payments, record payment, contact, notes, history, delete) | `/sponsors/{id}` |
+| Reports (event funding, tiers, payment methods, top sponsors) | `/reports` |
+| Alerts & exceptions (filter by severity) | `/alerts` |
+| Activity log | `/activity` |
 
 ### 6. REST API
 | Method | Endpoint | Purpose |
 |---|---|---|
 | GET / POST | `/api/events` | List or create events |
-| GET / PUT | `/api/events/{id}` | Get or update an event |
-| GET / POST | `/api/sponsors` | List (optional `q`, `status`, `eventId` filters) or create sponsors |
-| GET / PUT | `/api/sponsors/{id}` | Get or update a sponsor |
-| GET | `/api/dashboard/summary` | Dashboard indicators |
-| GET | `/api/dashboard/exceptions` | Current alerts |
+| GET / PUT / DELETE | `/api/events/{id}` | Get, update or delete an event (sponsors are unlinked) |
+| GET | `/api/events/{id}/funding` | Target, committed, pipeline, collected and outstanding for an event |
+| GET / POST | `/api/sponsors` | List (optional `q`, `status`, `eventId`, `tier`, `paymentStatus` filters) or create sponsors |
+| GET / PUT / DELETE | `/api/sponsors/{id}` | Get, update or delete a sponsor (with its payments) |
+| GET / POST | `/api/sponsors/{id}/payments` | List or record payments (422 when a payment rule is broken) |
+| DELETE | `/api/payments/{id}` | Remove a payment |
+| GET | `/api/dashboard/summary` | Dashboard indicators (incl. collected, outstanding, overdue, tiers) |
+| GET | `/api/dashboard/exceptions` | Current alerts, most severe first |
+| GET | `/api/reports/events`, `/api/reports/tiers`, `/api/reports/payment-methods` | Reporting data |
+| GET | `/api/activity?limit=20` | Recent activity (max 100) |
+| GET | `/events/export.csv`, `/sponsors/export.csv` | CSV downloads (accept the list filters) |
 
 ---
 
@@ -178,7 +212,3 @@ The repository adheres to a strict Git branching policy:
 - `feature/dashboard-summary`
 - `feature/exception-view`
 
-
-## Project Status
-
-**Current milestone:** Task 6 – Sponsor management, dashboard and alerts implemented.

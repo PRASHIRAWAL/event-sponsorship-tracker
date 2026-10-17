@@ -198,6 +198,10 @@ pipeline {
                     runCommand("curl ${retry} -o health-app.json http://localhost:${env.APP_PORT}/actuator/health")
                     runCommand("curl ${retry} -o health-nginx.json http://localhost:${env.NGINX_PORT}/actuator/health")
                     runCommand("curl -fsS -o dashboard-nginx.html http://localhost:${env.NGINX_PORT}/dashboard")
+                    // Smoke-test the other main pages and the reporting API through Nginx (curl -f fails on 4xx/5xx)
+                    ['events', 'sponsors', 'reports', 'alerts', 'activity', 'api/reports/events'].each { path ->
+                        runCommand("curl -fsS -o smoke-page.out http://localhost:${env.NGINX_PORT}/${path}")
+                    }
                     ['health-app.json', 'health-nginx.json'].each { file ->
                         def body = readFile(file).trim()
                         echo "${file}: ${body}"
