@@ -2,6 +2,9 @@ package com.eventtracker.controller;
 
 import com.eventtracker.service.EventNotFoundException;
 import com.eventtracker.service.InvalidEventReferenceException;
+import com.eventtracker.service.InvalidSponsorAmountException;
+import com.eventtracker.service.PaymentNotAllowedException;
+import com.eventtracker.service.PaymentNotFoundException;
 import com.eventtracker.service.SponsorNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -16,7 +19,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestControllerAdvice(assignableTypes = {
-        EventApiController.class, SponsorApiController.class, DashboardApiController.class})
+        EventApiController.class, SponsorApiController.class, DashboardApiController.class,
+        ReportApiController.class})
 public class ApiExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -44,8 +48,28 @@ public class ApiExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(InvalidSponsorAmountException.class)
+    public ProblemDetail handleInvalidSponsorAmount(InvalidSponsorAmountException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed");
+        problem.setProperty("errors", Map.of("sponsorshipAmount", ex.getMessage()));
+        return problem;
+    }
+
+    /** Business rule violations on payments: the request is well-formed but cannot be applied. */
+    @ExceptionHandler(PaymentNotAllowedException.class)
+    public ProblemDetail handlePaymentNotAllowed(PaymentNotAllowedException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+        problem.setProperty("errors", Map.of(ex.getField(), ex.getMessage()));
+        return problem;
+    }
+
     @ExceptionHandler(SponsorNotFoundException.class)
     public ProblemDetail handleSponsorNotFound(SponsorNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(PaymentNotFoundException.class)
+    public ProblemDetail handlePaymentNotFound(PaymentNotFoundException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 

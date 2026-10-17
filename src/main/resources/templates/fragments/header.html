@@ -1,32 +1,81 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <body>
-<!-- Shared site header. Usage: <header th:replace="~{fragments/header :: header('events')}"></header> -->
-<header class="topbar" th:fragment="header(active)">
-    <div class="topbar-inner">
+<!--
+    Shared app shell: sidebar navigation + top bar.
+    Usage: <header th:replace="~{fragments/header :: header('events')}"></header>
+-->
+<th:block th:fragment="header(active)">
+    <aside class="sidebar" id="sidebar" aria-label="Sidebar">
         <a class="brand" th:href="@{/dashboard}">
             <span class="brand-mark" aria-hidden="true">ES</span>
-            <span class="brand-text">Event Sponsorship <span>Tracker</span></span>
+            <span class="brand-text">Sponsorship Tracker <span>Events &amp; sponsors</span></span>
         </a>
-        <nav class="nav" aria-label="Main navigation">
-            <a th:href="@{/dashboard}" th:classappend="${active == 'dashboard'} ? 'active'"
-               th:aria-current="${active == 'dashboard'} ? 'page'">
-                <svg th:replace="~{fragments/icons :: dashboard}"></svg>Dashboard</a>
-            <a th:href="@{/events}" th:classappend="${active == 'events'} ? 'active'"
-               th:aria-current="${active == 'events'} ? 'page'">
-                <svg th:replace="~{fragments/icons :: calendar}"></svg>Events</a>
-            <a th:href="@{/sponsors}" th:classappend="${active == 'sponsors'} ? 'active'"
-               th:aria-current="${active == 'sponsors'} ? 'page'">
-                <svg th:replace="~{fragments/icons :: users}"></svg>Sponsors</a>
-            <a th:href="@{/alerts}" th:classappend="${active == 'alerts'} ? 'active'"
-               th:aria-current="${active == 'alerts'} ? 'page'">
-                <svg th:replace="~{fragments/icons :: alert}"></svg>Alerts</a>
-        </nav>
-        <div class="topbar-actions">
-            <a class="btn btn-primary btn-sm" th:href="@{/events/new}">
-                <svg th:replace="~{fragments/icons :: plus}"></svg>New Event</a>
+
+        <div>
+            <p class="nav-group-label">Workspace</p>
+            <nav class="nav" aria-label="Main navigation">
+                <a th:href="@{/dashboard}" th:classappend="${active == 'dashboard'} ? 'active'"
+                   th:aria-current="${active == 'dashboard'} ? 'page'">
+                    <svg th:replace="~{fragments/icons :: dashboard}"></svg>Dashboard</a>
+                <a th:href="@{/events}" th:classappend="${active == 'events'} ? 'active'"
+                   th:aria-current="${active == 'events'} ? 'page'">
+                    <svg th:replace="~{fragments/icons :: calendar}"></svg>Events</a>
+                <a th:href="@{/sponsors}" th:classappend="${active == 'sponsors'} ? 'active'"
+                   th:aria-current="${active == 'sponsors'} ? 'page'">
+                    <svg th:replace="~{fragments/icons :: users}"></svg>Sponsors</a>
+                <a th:href="@{/reports}" th:classappend="${active == 'reports'} ? 'active'"
+                   th:aria-current="${active == 'reports'} ? 'page'">
+                    <svg th:replace="~{fragments/icons :: chart}"></svg>Reports</a>
+                <a th:href="@{/alerts}" th:classappend="${active == 'alerts'} ? 'active'"
+                   th:aria-current="${active == 'alerts'} ? 'page'">
+                    <svg th:replace="~{fragments/icons :: alert}"></svg>Alerts
+                    <span class="nav-badge" th:if="${navAlertCount != null and navAlertCount > 0}"
+                          th:text="${navAlertCount}" th:title="|${navAlertCount} open alerts|">3</span></a>
+                <a th:href="@{/activity}" th:classappend="${active == 'activity'} ? 'active'"
+                   th:aria-current="${active == 'activity'} ? 'page'">
+                    <svg th:replace="~{fragments/icons :: activity}"></svg>Activity</a>
+            </nav>
         </div>
-    </div>
-</header>
+
+        <div>
+            <p class="nav-group-label">Quick add</p>
+            <nav class="nav" aria-label="Quick add">
+                <a th:href="@{/events/new}"><svg th:replace="~{fragments/icons :: plus}"></svg>New event</a>
+                <a th:href="@{/sponsors/new}"><svg th:replace="~{fragments/icons :: plus}"></svg>New sponsor</a>
+            </nav>
+        </div>
+
+        <div class="sidebar-footer">
+            <span><span class="status-dot" aria-hidden="true"></span>System online</span>
+            <ul>
+                <li><a th:href="@{/actuator/health}">Health check</a></li>
+                <li><a th:href="@{/actuator/info}">Build info</a></li>
+            </ul>
+        </div>
+    </aside>
+    <div class="sidebar-backdrop" data-sidebar-close></div>
+
+    <header class="topbar">
+        <button type="button" class="icon-btn menu-toggle" data-sidebar-toggle aria-controls="sidebar"
+                aria-expanded="false" aria-label="Open menu">
+            <svg th:replace="~{fragments/icons :: menu}"></svg>
+        </button>
+        <form class="topbar-search" method="get" role="search" th:action="@{/dashboard}">
+            <svg th:replace="~{fragments/icons :: search}"></svg>
+            <input class="input" type="search" name="q" id="global-search"
+                   placeholder="Search events and sponsors…  ( / )" aria-label="Search events and sponsors">
+        </form>
+        <div class="topbar-actions">
+            <button type="button" class="icon-btn theme-toggle" data-theme-toggle aria-label="Toggle dark mode"
+                    title="Toggle dark mode">
+                <svg th:replace="~{fragments/icons :: sun}"></svg>
+                <svg th:replace="~{fragments/icons :: moon}"></svg>
+            </button>
+            <a class="btn btn-primary btn-sm" th:href="@{/events/new}">
+                <svg th:replace="~{fragments/icons :: plus}"></svg><span class="topbar-new-label">New Event</span></a>
+        </div>
+    </header>
+</th:block>
 </body>
 </html>

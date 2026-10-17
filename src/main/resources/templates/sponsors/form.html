@@ -33,12 +33,32 @@
                 <p class="form-section-hint">Who the sponsor is and how to reach them.</p>
             </div>
             <div class="form-fields">
-                <div class="field">
-                    <label class="label" for="name">Sponsor Name <span class="required">*</span></label>
-                    <input class="input" type="text" id="name" th:field="*{name}" maxlength="150" required
-                           placeholder="e.g. Acme Corporation"
-                           th:classappend="${#fields.hasErrors('name')} ? 'invalid'">
-                    <p class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Error</p>
+                <div class="form-grid">
+                    <div class="field">
+                        <label class="label" for="name">Sponsor Name <span class="required">*</span></label>
+                        <input class="input" type="text" id="name" th:field="*{name}" maxlength="150" required
+                               placeholder="e.g. Acme Corporation"
+                               th:classappend="${#fields.hasErrors('name')} ? 'invalid'">
+                        <p class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Error</p>
+                    </div>
+
+                    <div class="field">
+                        <label class="label" for="industry">Industry <span class="optional">(optional)</span></label>
+                        <input class="input" type="text" id="industry" th:field="*{industry}" maxlength="80"
+                               placeholder="e.g. Software" list="industry-suggestions"
+                               th:classappend="${#fields.hasErrors('industry')} ? 'invalid'">
+                        <datalist id="industry-suggestions">
+                            <option value="Information Technology"></option>
+                            <option value="Software"></option>
+                            <option value="Banking & Finance"></option>
+                            <option value="Consulting"></option>
+                            <option value="Food & Beverages"></option>
+                            <option value="Retail"></option>
+                            <option value="Entertainment"></option>
+                            <option value="Education"></option>
+                        </datalist>
+                        <p class="field-error" th:if="${#fields.hasErrors('industry')}" th:errors="*{industry}">Error</p>
+                    </div>
                 </div>
 
                 <div class="field">
@@ -72,7 +92,7 @@
         <section class="form-section">
             <div>
                 <h2 class="form-section-title">Sponsorship</h2>
-                <p class="form-section-hint">The event being sponsored, the amount and the current status.</p>
+                <p class="form-section-hint">The event being sponsored, the package, the amount and the current status.</p>
             </div>
             <div class="form-fields">
                 <div class="field">
@@ -88,15 +108,6 @@
 
                 <div class="form-grid">
                     <div class="field">
-                        <label class="label" for="sponsorshipAmount">Sponsorship Amount <span class="optional">(optional)</span></label>
-                        <input class="input" type="number" id="sponsorshipAmount" th:field="*{sponsorshipAmount}"
-                               min="0.01" step="0.01" placeholder="0.00"
-                               th:classappend="${#fields.hasErrors('sponsorshipAmount')} ? 'invalid'">
-                        <p class="field-error" th:if="${#fields.hasErrors('sponsorshipAmount')}"
-                           th:errors="*{sponsorshipAmount}">Error</p>
-                    </div>
-
-                    <div class="field">
                         <label class="label" for="sponsorshipStatus">Sponsorship Status <span class="required">*</span></label>
                         <select class="select" id="sponsorshipStatus" th:field="*{sponsorshipStatus}" required
                                 th:classappend="${#fields.hasErrors('sponsorshipStatus')} ? 'invalid'">
@@ -105,13 +116,61 @@
                         <p class="field-error" th:if="${#fields.hasErrors('sponsorshipStatus')}"
                            th:errors="*{sponsorshipStatus}">Error</p>
                     </div>
+
+                    <div class="field">
+                        <label class="label" for="tier">Tier <span class="optional">(optional)</span></label>
+                        <select class="select" id="tier" th:field="*{tier}">
+                            <option value="">— No tier —</option>
+                            <option th:each="t : ${tiers}" th:value="${t}" th:text="${t.label}">Gold</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="field">
+                        <label class="label" for="sponsorshipAmount">Sponsorship Amount <span class="optional">(optional)</span></label>
+                        <div class="input-affix">
+                            <span class="affix" aria-hidden="true">₹</span>
+                            <input class="input" type="number" id="sponsorshipAmount" th:field="*{sponsorshipAmount}"
+                                   min="0.01" step="0.01" placeholder="0.00"
+                                   th:classappend="${#fields.hasErrors('sponsorshipAmount')} ? 'invalid'">
+                        </div>
+                        <p class="field-error" th:if="${#fields.hasErrors('sponsorshipAmount')}"
+                           th:errors="*{sponsorshipAmount}">Error</p>
+                    </div>
+
+                    <div class="field">
+                        <label class="label" for="paymentDueDate">Payment Due Date <span class="optional">(optional)</span></label>
+                        <input class="input" type="date" id="paymentDueDate" th:field="*{paymentDueDate}"
+                               th:classappend="${#fields.hasErrors('paymentDueDate')} ? 'invalid'">
+                        <p class="field-hint">An unpaid balance after this date is flagged as overdue.</p>
+                        <p class="field-error" th:if="${#fields.hasErrors('paymentDueDate')}"
+                           th:errors="*{paymentDueDate}">Error</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <div>
+                <h2 class="form-section-title">Notes</h2>
+                <p class="form-section-hint">Deliverables, agreements or anything the team should know.</p>
+            </div>
+            <div class="form-fields">
+                <div class="field">
+                    <label class="label" for="notes">Notes <span class="optional">(optional)</span></label>
+                    <textarea class="textarea" id="notes" th:field="*{notes}" rows="3" maxlength="500"
+                              placeholder="e.g. Logo on stage backdrop, 2 stalls in the expo" data-count="notes-count"
+                              th:classappend="${#fields.hasErrors('notes')} ? 'invalid'"></textarea>
+                    <p class="char-count" id="notes-count" aria-live="polite">Up to 500 characters.</p>
+                    <p class="field-error" th:if="${#fields.hasErrors('notes')}" th:errors="*{notes}">Error</p>
                 </div>
             </div>
         </section>
 
         <div class="form-actions">
             <span class="form-actions-note">Fields marked <span class="required">*</span> are required.</span>
-            <a class="btn btn-secondary" th:href="@{/sponsors}">Cancel</a>
+            <a class="btn btn-secondary" th:href="${sponsorId == null} ? @{/sponsors} : @{/sponsors/{id}(id=${sponsorId})}">Cancel</a>
             <button type="submit" class="btn btn-primary" id="save-sponsor"
                     th:text="${sponsorId == null} ? 'Add Sponsor' : 'Save Changes'">Save</button>
         </div>

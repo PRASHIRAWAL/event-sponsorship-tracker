@@ -9,18 +9,17 @@
         <div>
             <p class="eyebrow">Manage</p>
             <h1 class="page-title">Events</h1>
-            <p class="page-subtitle">Create, track and update the events your sponsors support.</p>
+            <p class="page-subtitle">Create, track and fund the events your sponsors support.</p>
         </div>
         <div class="page-actions">
+            <a class="btn btn-secondary" id="export-events" th:href="@{${pager.exportUrl('/events/export.csv')}}">
+                <svg th:replace="~{fragments/icons :: download}"></svg>Export CSV</a>
             <a class="btn btn-primary" id="create-event" th:href="@{/events/new}">
                 <svg th:replace="~{fragments/icons :: plus}"></svg>Create Event</a>
         </div>
     </div>
 
-    <div class="banner banner-success" id="success-message" role="status" th:if="${successMessage}">
-        <svg th:replace="~{fragments/icons :: check}"></svg>
-        <span th:text="${successMessage}">Saved.</span>
-    </div>
+    <div th:replace="~{fragments/ui :: flash}"></div>
 
     <form class="toolbar" id="event-search" method="get" role="search" th:action="@{/events}">
         <div class="search-field">
@@ -33,6 +32,8 @@
             <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.label}"
                     th:selected="${s == status}">Upcoming</option>
         </select>
+        <input type="hidden" name="sort" th:value="${pager.sortKey}">
+        <input type="hidden" name="dir" th:value="${pager.dir}">
         <button type="submit" class="btn btn-primary">Search</button>
         <a class="btn btn-ghost" th:if="${filtered}" th:href="@{/events}">Clear</a>
     </form>
@@ -53,63 +54,79 @@
         </div>
     </div>
 
-    <th:block th:unless="${#lists.isEmpty(events)}">
-        <p class="result-meta"
-           th:text="${#lists.size(events) == 1} ? 'Showing 1 event' : |Showing ${#lists.size(events)} events|">
-            Showing 2 events</p>
-
-        <div class="card table-card">
-            <div class="table-wrapper">
-                <table class="data-table responsive" id="events-table">
-                    <thead>
-                    <tr>
-                        <th>Event</th>
-                        <th>Date</th>
-                        <th>Venue</th>
-                        <th>Status</th>
-                        <th class="col-actions"><span class="sr-only">Actions</span></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="event : ${events}">
-                        <td class="cell-primary" data-label="Event">
-                            <div class="cell-identity">
-                                <div class="date-tile" aria-hidden="true"
-                                     th:classappend="${event.status.name() == 'PAST'} ? 'is-past'">
-                                    <span class="date-tile-month"
-                                          th:text="${#temporals.format(event.eventDate, 'MMM')}">Nov</span>
-                                    <span class="date-tile-day" th:text="${#temporals.format(event.eventDate, 'dd')}">05</span>
-                                </div>
-                                <div class="cell-identity-text">
-                                    <a class="cell-title" th:href="@{/events/{id}(id=${event.id})}"
-                                       th:text="${event.name}">Tech Fest</a>
-                                    <p class="cell-sub clamp"
-                                       th:text="${event.description != null} ? |ID ${event.id} · ${event.description}| : |ID ${event.id}|">
-                                        ID 1 · Annual technical festival</p>
-                                </div>
+    <div class="card table-card" th:unless="${#lists.isEmpty(events)}">
+        <div class="table-wrapper">
+            <table class="data-table responsive" id="events-table">
+                <thead>
+                <tr>
+                    <th th:attr="aria-sort=${pager.sortState('name')}">
+                        <a th:replace="~{fragments/ui :: sort(${pager}, 'name', 'Event')}"></a></th>
+                    <th th:attr="aria-sort=${pager.sortState('date')}">
+                        <a th:replace="~{fragments/ui :: sort(${pager}, 'date', 'Date')}"></a></th>
+                    <th th:attr="aria-sort=${pager.sortState('venue')}">
+                        <a th:replace="~{fragments/ui :: sort(${pager}, 'venue', 'Venue')}"></a></th>
+                    <th th:attr="aria-sort=${pager.sortState('target')}" style="min-width: 190px">
+                        <a th:replace="~{fragments/ui :: sort(${pager}, 'target', 'Funding')}"></a></th>
+                    <th>Status</th>
+                    <th class="col-actions"><span class="sr-only">Actions</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="event : ${events}" th:with="row=${funding.get(event.id)}">
+                    <td class="cell-primary" data-label="Event">
+                        <div class="cell-identity">
+                            <div class="date-tile" aria-hidden="true"
+                                 th:classappend="${event.status.name() == 'PAST'} ? 'is-past'">
+                                <span class="date-tile-month"
+                                      th:text="${#temporals.format(event.eventDate, 'MMM')}">Nov</span>
+                                <span class="date-tile-day" th:text="${#temporals.format(event.eventDate, 'dd')}">05</span>
                             </div>
-                        </td>
-                        <td class="nowrap" data-label="Date"
-                            th:text="${#temporals.format(event.eventDate, 'dd MMM yyyy')}">05 Nov 2026</td>
-                        <td data-label="Venue" th:text="${event.venue}">Main Auditorium</td>
-                        <td data-label="Status">
-                            <span class="badge" th:classappend="${'badge-' + #strings.toLowerCase(event.status.name())}"
-                                  th:text="${event.status.label}">Upcoming</span>
-                        </td>
-                        <td class="col-actions">
-                            <div class="row-actions">
-                                <a class="btn btn-sm btn-secondary" th:href="@{/events/{id}(id=${event.id})}">
-                                    <svg th:replace="~{fragments/icons :: eye}"></svg>View</a>
-                                <a class="btn btn-sm btn-soft" th:href="@{/events/{id}/edit(id=${event.id})}">
-                                    <svg th:replace="~{fragments/icons :: edit}"></svg>Edit</a>
+                            <div class="cell-identity-text">
+                                <a class="cell-title" th:href="@{/events/{id}(id=${event.id})}"
+                                   th:text="${event.name}">Tech Fest</a>
+                                <p class="cell-sub clamp"
+                                   th:text="${event.description != null} ? |ID ${event.id} · ${event.description}| : |ID ${event.id}|">
+                                    ID 1 · Annual technical festival</p>
                             </div>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
+                        </div>
+                    </td>
+                    <td class="nowrap" data-label="Date"
+                        th:text="${#temporals.format(event.eventDate, 'dd MMM yyyy')}">05 Nov 2026</td>
+                    <td data-label="Venue" th:text="${event.venue}">Main Auditorium</td>
+                    <td data-label="Funding">
+                        <div class="cell-fill" th:if="${row.hasTarget()}">
+                            <div class="progress" role="progressbar" aria-label="Committed against target"
+                                 aria-valuemin="0" aria-valuemax="100" th:aria-valuenow="${row.progressWidth()}">
+                                <div class="progress-bar" th:style="|width: ${row.progressWidth()}%|"
+                                     th:classappend="${row.percentOfTarget() >= 100} ? 'is-complete' : (${row.percentOfTarget() < 40} ? 'is-low')"></div>
+                            </div>
+                            <p class="cell-sub"
+                               th:text="|${row.percentOfTarget()}% of ${#numbers.formatDecimal(row.target(), 1, 'COMMA', 0, 'POINT')}|">
+                                40% of 500,000</p>
+                        </div>
+                        <div class="cell-stack" th:unless="${row.hasTarget()}">
+                            <p class="amount" th:text="${#numbers.formatDecimal(row.committed(), 1, 'COMMA', 2, 'POINT')}">0.00</p>
+                            <p class="cell-sub">No target set</p>
+                        </div>
+                    </td>
+                    <td data-label="Status">
+                        <span class="badge" th:classappend="${'badge-' + #strings.toLowerCase(event.status.name())}"
+                              th:text="${event.status.label}">Upcoming</span>
+                    </td>
+                    <td class="col-actions">
+                        <div class="row-actions">
+                            <a class="btn btn-sm btn-secondary" th:href="@{/events/{id}(id=${event.id})}">
+                                <svg th:replace="~{fragments/icons :: eye}"></svg>View</a>
+                            <a class="btn btn-sm btn-soft" th:href="@{/events/{id}/edit(id=${event.id})}">
+                                <svg th:replace="~{fragments/icons :: edit}"></svg>Edit</a>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
         </div>
-    </th:block>
+        <nav th:replace="~{fragments/ui :: pagination(${pager}, 'events')}"></nav>
+    </div>
 </main>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>

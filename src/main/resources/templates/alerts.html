@@ -10,14 +10,13 @@
             <p class="eyebrow">Monitor</p>
             <h1 class="page-title">
                 Alerts &amp; Exceptions
-                <span class="count-pill" th:classappend="${#lists.isEmpty(alerts)} ? 'is-zero'"
-                      th:text="${#lists.size(alerts)}">0</span>
+                <span class="count-pill" th:classappend="${allCount == 0} ? 'is-zero'" th:text="${allCount}">0</span>
             </h1>
             <p class="page-subtitle">Events and sponsors that need follow-up, based on the rules below.</p>
         </div>
     </div>
 
-    <div class="card healthy-card" id="no-alerts" role="status" th:if="${#lists.isEmpty(alerts)}">
+    <div class="card healthy-card" id="no-alerts" role="status" th:if="${allCount == 0}">
         <span class="healthy-icon"><svg th:replace="~{fragments/icons :: check}"></svg></span>
         <div>
             <p class="healthy-title">No issues found.</p>
@@ -25,27 +24,39 @@
         </div>
     </div>
 
-    <th:block th:unless="${#lists.isEmpty(alerts)}">
+    <th:block th:unless="${allCount == 0}">
         <div class="card alert-overview" role="status">
             <span class="alert-overview-icon"><svg th:replace="~{fragments/icons :: alert}"></svg></span>
             <div>
                 <p class="alert-overview-title"
-                   th:text="${#lists.size(alerts) == 1} ? '1 item needs attention' : |${#lists.size(alerts)} items need attention|">
+                   th:text="${allCount == 1} ? '1 item needs attention' : |${allCount} items need attention|">
                     3 items need attention</p>
                 <p class="alert-overview-text">Use the action on each card to open the event or sponsor and fix it.
                     The alert clears automatically once the record passes the rule.</p>
             </div>
         </div>
 
-        <ul class="alert-list" id="alerts-list">
-            <li class="card alert-card" th:each="alert : ${alerts}">
+        <nav class="chip-group" aria-label="Filter by severity">
+            <a class="chip" th:href="@{/alerts}" th:classappend="${severity == null} ? 'is-active'">
+                All <span class="chip-count" th:text="${allCount}">0</span></a>
+            <a class="chip" th:each="level, it : ${severities}" th:href="@{/alerts(severity=${level})}"
+               th:classappend="${severity == level} ? 'is-active'">
+                <span th:text="${level.label}">High</span>
+                <span class="chip-count" th:text="${severityCounts[it.index]}">0</span></a>
+        </nav>
+
+        <p class="empty-inline card" th:if="${#lists.isEmpty(alerts)}">No alerts with this severity.</p>
+
+        <ul class="alert-list" id="alerts-list" th:unless="${#lists.isEmpty(alerts)}">
+            <li class="card alert-card" th:each="alert : ${alerts}"
+                th:classappend="${'is-' + #strings.toLowerCase(alert.rule().severity.name())}">
                 <span class="alert-card-icon">
                     <th:block th:if="${alert.subjectType() == 'EVENT'}"><svg th:replace="~{fragments/icons :: calendar}"></svg></th:block>
                     <th:block th:if="${alert.subjectType() == 'SPONSOR'}"><svg th:replace="~{fragments/icons :: users}"></svg></th:block>
                 </span>
                 <div class="alert-card-main">
                     <p class="alert-card-title">
-                        <span th:replace="~{fragments/alerts :: severity(${alert.rule().name()})}"></span>
+                        <span th:replace="~{fragments/alerts :: severity(${alert.rule()})}"></span>
                         <span th:text="${alert.rule().title}">Missing contact person</span>
                     </p>
                     <p class="alert-card-desc" th:text="${alert.rule().description}">Rule description</p>
@@ -58,7 +69,8 @@
                     <a class="btn btn-sm btn-soft" th:if="${alert.subjectType() == 'EVENT'}"
                        th:href="@{/events/{id}(id=${alert.subjectId()})}">View Event</a>
                     <a class="btn btn-sm btn-primary" th:if="${alert.subjectType() == 'SPONSOR'}"
-                       th:href="@{/sponsors/{id}/edit(id=${alert.subjectId()})}">Fix Sponsor</a>
+                       th:href="${alert.rule().name() == 'SPONSOR_PAYMENT_OVERDUE'} ? @{/sponsors/{id}(id=${alert.subjectId()})} : @{/sponsors/{id}/edit(id=${alert.subjectId()})}"
+                       th:text="${alert.rule().name() == 'SPONSOR_PAYMENT_OVERDUE'} ? 'Record Payment' : 'Fix Sponsor'">Fix Sponsor</a>
                 </div>
             </li>
         </ul>
@@ -67,12 +79,12 @@
     <section aria-labelledby="rules-title">
         <h2 class="section-title rules-heading" id="rules-title">Rules Applied</h2>
         <p class="rules-hint">Cancelled sponsorships are excluded from all sponsor checks.
-            Severity only affects how an alert is displayed.</p>
+            Alerts are listed with the most severe first.</p>
         <ul class="rule-grid" id="alert-rules">
             <li class="card rule-card" th:each="rule : ${rules}">
                 <div class="rule-card-head">
                     <span th:text="${rule.title}">Rule</span>
-                    <span th:replace="~{fragments/alerts :: severity(${rule.name()})}"></span>
+                    <span th:replace="~{fragments/alerts :: severity(${rule})}"></span>
                 </div>
                 <p th:text="${rule.description}">Description</p>
             </li>

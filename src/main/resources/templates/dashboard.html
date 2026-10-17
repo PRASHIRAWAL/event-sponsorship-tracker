@@ -5,13 +5,13 @@
 <header th:replace="~{fragments/header :: header('dashboard')}"></header>
 
 <main class="page">
-    <!-- Hero: title, quick actions and global search -->
+    <!-- Hero: title, quick actions, search and headline figures -->
     <section class="hero">
         <div class="hero-top">
             <div>
                 <p class="eyebrow">Overview</p>
                 <h1 class="page-title">Dashboard</h1>
-                <p class="page-subtitle">Track your events, sponsors and sponsorship health in one place.</p>
+                <p class="page-subtitle">Track your events, sponsors, payments and funding targets in one place.</p>
             </div>
             <div class="page-actions">
                 <a class="btn btn-glass" th:href="@{/sponsors/new}">
@@ -29,6 +29,20 @@
             <button type="submit" class="btn btn-light">Search</button>
             <a class="btn btn-glass" th:if="${q != null}" th:href="@{/dashboard}">Clear</a>
         </form>
+        <div class="hero-stats">
+            <div>
+                <span class="hero-stat-value" th:text="|${summary.collectionRate()}%|">0%</span>
+                <span class="hero-stat-label">of committed funds collected</span>
+            </div>
+            <div th:if="${summary.totalTarget().signum() > 0}">
+                <span class="hero-stat-value" th:text="|${summary.targetProgress()}%|">0%</span>
+                <span class="hero-stat-label">of upcoming targets committed</span>
+            </div>
+            <div>
+                <span class="hero-stat-value" th:text="${summary.overduePayments()}">0</span>
+                <span class="hero-stat-label">overdue payments</span>
+            </div>
+        </div>
     </section>
 
     <section id="search-results" th:if="${q != null}">
@@ -67,20 +81,19 @@
                         <span class="avatar" aria-hidden="true" th:classappend="${'avatar-' + (sponsor.id % 6)}"
                               th:text="${#strings.substring(sponsor.name, 0, 1)}">A</span>
                         <div class="list-item-main">
-                            <a class="list-item-title" th:href="@{/sponsors/{id}/edit(id=${sponsor.id})}"
+                            <a class="list-item-title" th:href="@{/sponsors/{id}(id=${sponsor.id})}"
                                th:text="${sponsor.name}">Acme Corp</a>
                             <p class="list-item-meta"
                                th:text="${sponsor.event != null} ? ${sponsor.event.name} : 'Not linked to an event'">Tech Fest</p>
                         </div>
-                        <span class="badge" th:classappend="${'badge-' + #strings.toLowerCase(sponsor.sponsorshipStatus.name())}"
-                              th:text="${sponsor.sponsorshipStatus.label}">Confirmed</span>
+                        <span th:replace="~{fragments/ui :: status(${sponsor.sponsorshipStatus})}"></span>
                     </li>
                 </ul>
             </div>
         </div>
     </section>
 
-    <!-- KPI cards: 4 counts (row 1) + 3 wider amount/alert cards (row 2) -->
+    <!-- KPI cards: 4 counts (row 1) + 4 money/alert cards (row 2) -->
     <section class="kpi-grid" id="summary-cards" aria-label="Summary">
         <a class="card kpi" th:href="@{/events}">
             <div class="kpi-top">
@@ -114,7 +127,7 @@
             <span class="kpi-value" id="total-sponsors" th:text="${summary.totalSponsors()}">0</span>
             <span class="kpi-note">Across all statuses</span>
         </a>
-        <div class="card kpi kpi-wide">
+        <a class="card kpi kpi-wide" th:href="@{/sponsors(status='CONFIRMED')}">
             <div class="kpi-top">
                 <span class="kpi-label">Committed Amount</span>
                 <span class="kpi-icon kpi-icon-success"><svg th:replace="~{fragments/icons :: wallet}"></svg></span>
@@ -122,8 +135,22 @@
             <span class="kpi-value" id="committed-amount"
                   th:text="${#numbers.formatDecimal(summary.committedAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</span>
             <span class="kpi-note">Confirmed + Completed</span>
-        </div>
+        </a>
         <div class="card kpi kpi-wide">
+            <div class="kpi-top">
+                <span class="kpi-label">Collected</span>
+                <span class="kpi-icon kpi-icon-info"><svg th:replace="~{fragments/icons :: check}"></svg></span>
+            </div>
+            <span class="kpi-value" id="collected-amount"
+                  th:text="${#numbers.formatDecimal(summary.collectedAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</span>
+            <div class="progress" role="progressbar" aria-label="Share of committed funds collected"
+                 aria-valuemin="0" aria-valuemax="100" th:aria-valuenow="${summary.collectionRate()}">
+                <div class="progress-bar" th:style="|width: ${summary.collectionRate()}%|"></div>
+            </div>
+            <span class="kpi-note" th:text="|${#numbers.formatDecimal(summary.outstandingAmount(), 1, 'COMMA', 2, 'POINT')} still outstanding|">
+                0.00 still outstanding</span>
+        </div>
+        <a class="card kpi kpi-wide" th:href="@{/sponsors(status='PROPOSED')}">
             <div class="kpi-top">
                 <span class="kpi-label">Open Pipeline</span>
                 <span class="kpi-icon"><svg th:replace="~{fragments/icons :: trend}"></svg></span>
@@ -131,7 +158,7 @@
             <span class="kpi-value" id="open-amount"
                   th:text="${#numbers.formatDecimal(summary.openAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</span>
             <span class="kpi-note">Proposed + Pending</span>
-        </div>
+        </a>
         <a class="card kpi kpi-wide" th:href="@{/alerts}" th:classappend="${summary.alertCount() > 0} ? 'kpi-alert'">
             <div class="kpi-top">
                 <span class="kpi-label">Open Alerts</span>
@@ -152,67 +179,64 @@
             Note</span>
     </p>
 
-    <!-- Status breakdown + items needing attention -->
-    <div class="grid-2">
-        <section class="card table-card">
+    <!-- Funding progress of upcoming events + items needing attention -->
+    <div class="grid-main-side">
+        <section class="card" id="upcoming-panel">
             <div class="card-header">
                 <div>
-                    <h2 class="section-title">Sponsorship Status</h2>
-                    <p class="card-subtitle">Click a count to see the sponsors with that status.</p>
+                    <h2 class="section-title">Upcoming Events</h2>
+                    <p class="card-subtitle">The next events by date, with committed sponsorship against each target.</p>
                 </div>
+                <a class="link-arrow" th:href="@{/events(status='UPCOMING')}">View all</a>
             </div>
-
-            <div class="distribution" th:if="${summary.totalSponsors() > 0}">
-                <div class="distribution-bar" role="img" aria-label="Share of sponsors by status">
-                    <th:block th:each="row : ${summary.sponsorsByStatus()}">
-                        <span th:if="${row.count() > 0}"
-                              th:classappend="${'fill-' + #strings.toLowerCase(row.status().name())}"
-                              th:style="|width: ${row.count() * 100.0 / summary.totalSponsors()}%|"
-                              th:title="|${row.status().label}: ${row.count()}|"></span>
-                    </th:block>
-                </div>
-                <ul class="distribution-legend">
-                    <li th:each="row : ${summary.sponsorsByStatus()}">
-                        <span class="legend-dot"
-                              th:classappend="${'fill-' + #strings.toLowerCase(row.status().name())}"></span>
-                        <span th:text="|${row.status().label} ${row.count()}|">Confirmed 2</span>
-                    </li>
-                </ul>
+            <div class="empty-state" th:if="${#lists.isEmpty(upcomingEvents)}">
+                <span class="empty-state-icon"><svg th:replace="~{fragments/icons :: calendar}"></svg></span>
+                <p class="empty-state-title">No upcoming events</p>
+                <a class="btn btn-primary btn-sm" th:href="@{/events/new}">
+                    <svg th:replace="~{fragments/icons :: plus}"></svg>Create Event</a>
             </div>
-
-            <div class="table-wrapper">
-                <table class="data-table" id="status-table">
-                    <thead>
-                    <tr>
-                        <th>Status</th>
-                        <th>Sponsors</th>
-                        <th class="col-num">Recorded Amount</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="row : ${summary.sponsorsByStatus()}">
-                        <td>
-                            <span class="badge" th:classappend="${'badge-' + #strings.toLowerCase(row.status().name())}"
-                                  th:text="${row.status().label}">Confirmed</span>
-                        </td>
-                        <td>
-                            <a class="count-pill" th:classappend="${row.count() == 0} ? 'is-zero'"
-                               th:href="@{/sponsors(status=${row.status()})}" th:text="${row.count()}"
-                               th:title="|View ${row.status().label} sponsors|">0</a>
-                        </td>
-                        <td class="col-num amount"
-                            th:text="${#numbers.formatDecimal(row.totalAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
+            <ul class="list funding-list" th:unless="${#lists.isEmpty(upcomingFunding)}">
+                <li class="list-item" th:each="row : ${upcomingFunding}" th:with="event=${row.event()}">
+                    <div class="date-tile" aria-hidden="true">
+                        <span class="date-tile-month" th:text="${#temporals.format(event.eventDate, 'MMM')}">Nov</span>
+                        <span class="date-tile-day" th:text="${#temporals.format(event.eventDate, 'dd')}">05</span>
+                    </div>
+                    <div class="list-item-main">
+                        <a class="list-item-title" th:href="@{/events/{id}(id=${event.id})}" th:text="${event.name}">Tech Fest</a>
+                        <p class="list-item-meta"
+                           th:text="|${#temporals.format(event.eventDate, 'EEE, dd MMM yyyy')} · ${event.venue}|">
+                            Thu, 05 Nov 2026 · Main Auditorium</p>
+                    </div>
+                    <div class="list-item-end">
+                        <span class="badge badge-upcoming"
+                              th:text="${event.daysUntil == 0} ? 'Today' : (${event.daysUntil == 1} ? 'Tomorrow' : |In ${event.daysUntil} days|)">In 5 days</span>
+                    </div>
+                    <div class="funding-row">
+                        <th:block th:if="${row.hasTarget()}">
+                            <div class="progress" role="progressbar" aria-label="Committed sponsorship against target"
+                                 aria-valuemin="0" aria-valuemax="100" th:aria-valuenow="${row.progressWidth()}">
+                                <div class="progress-bar" th:style="|width: ${row.progressWidth()}%|"
+                                     th:classappend="${row.percentOfTarget() >= 100} ? 'is-complete' : (${row.percentOfTarget() < 40} ? 'is-low')"></div>
+                            </div>
+                            <div class="progress-meta">
+                                <span th:text="|${#numbers.formatDecimal(row.committed(), 1, 'COMMA', 2, 'POINT')} of ${#numbers.formatDecimal(row.target(), 1, 'COMMA', 2, 'POINT')}|">0 of 0</span>
+                                <strong th:text="|${row.percentOfTarget()}%|">0%</strong>
+                            </div>
+                        </th:block>
+                        <p class="progress-meta" th:unless="${row.hasTarget()}">
+                            <span th:text="|${#numbers.formatDecimal(row.committed(), 1, 'COMMA', 2, 'POINT')} committed · no target set|">0 committed</span>
+                            <span th:text="|${row.sponsorCount()} sponsor(s)|">0 sponsors</span>
+                        </p>
+                    </div>
+                </li>
+            </ul>
         </section>
 
         <section class="card" id="attention-panel">
             <div class="card-header">
                 <div>
                     <h2 class="section-title">Needs Attention</h2>
-                    <p class="card-subtitle">Items flagged by the alert rules.</p>
+                    <p class="card-subtitle">Most severe first.</p>
                 </div>
                 <a class="link-arrow" th:href="@{/alerts}"
                    th:text="${summary.alertCount() > 0} ? |View all (${summary.alertCount()})| : 'View rules'">View all</a>
@@ -224,10 +248,10 @@
             </div>
             <ul class="list" th:unless="${#lists.isEmpty(topAlerts)}">
                 <li class="list-item" th:each="alert : ${topAlerts}">
-                    <span th:replace="~{fragments/alerts :: severity(${alert.rule().name()})}"></span>
+                    <span th:replace="~{fragments/alerts :: severity(${alert.rule()})}"></span>
                     <div class="list-item-main">
                         <a class="list-item-title"
-                           th:href="${alert.subjectType() == 'EVENT'} ? @{/events/{id}(id=${alert.subjectId()})} : @{/sponsors/{id}/edit(id=${alert.subjectId()})}"
+                           th:href="${alert.subjectType() == 'EVENT'} ? @{/events/{id}(id=${alert.subjectId()})} : @{/sponsors/{id}(id=${alert.subjectId()})}"
                            th:text="${alert.subjectName()}">Acme Corp</a>
                         <p class="list-item-meta" th:text="${alert.rule().title}">Missing contact person</p>
                     </div>
@@ -236,37 +260,87 @@
         </section>
     </div>
 
-    <!-- Upcoming events -->
-    <section class="card" id="upcoming-panel">
-        <div class="card-header">
-            <div>
-                <h2 class="section-title">Upcoming Events</h2>
-                <p class="card-subtitle">The next events by date.</p>
+    <!-- Status breakdown + tiers + recent activity -->
+    <div class="grid-3">
+        <section class="card table-card">
+            <div class="card-header">
+                <div>
+                    <h2 class="section-title">Sponsorship Status</h2>
+                    <p class="card-subtitle">Click a count to see those sponsors.</p>
+                </div>
             </div>
-            <a class="link-arrow" th:href="@{/events(status='UPCOMING')}">View all</a>
-        </div>
-        <div class="empty-state" th:if="${#lists.isEmpty(upcomingEvents)}">
-            <span class="empty-state-icon"><svg th:replace="~{fragments/icons :: calendar}"></svg></span>
-            <p class="empty-state-title">No upcoming events</p>
-            <a class="btn btn-primary btn-sm" th:href="@{/events/new}">
-                <svg th:replace="~{fragments/icons :: plus}"></svg>Create Event</a>
-        </div>
-        <ul class="list" th:unless="${#lists.isEmpty(upcomingEvents)}">
-            <li class="list-item" th:each="event : ${upcomingEvents}">
-                <div class="date-tile" aria-hidden="true">
-                    <span class="date-tile-month" th:text="${#temporals.format(event.eventDate, 'MMM')}">Nov</span>
-                    <span class="date-tile-day" th:text="${#temporals.format(event.eventDate, 'dd')}">05</span>
+
+            <div class="donut-wrap" th:if="${summary.totalSponsors() > 0}">
+                <div class="donut" role="img" aria-label="Share of sponsors by status" th:style="${statusDonut}">
+                    <div class="donut-center">
+                        <span class="donut-value" th:text="${summary.totalSponsors()}">0</span>
+                        <span class="donut-label">sponsors</span>
+                    </div>
                 </div>
-                <div class="list-item-main">
-                    <a class="list-item-title" th:href="@{/events/{id}(id=${event.id})}" th:text="${event.name}">Tech Fest</a>
-                    <p class="list-item-meta"
-                       th:text="|${#temporals.format(event.eventDate, 'EEE, dd MMM yyyy')} · ${event.venue}|">
-                        Thu, 05 Nov 2026 · Main Auditorium</p>
+                <ul class="legend">
+                    <li th:each="row : ${summary.sponsorsByStatus()}">
+                        <span class="legend-dot" th:classappend="${'fill-' + #strings.toLowerCase(row.status().name())}"></span>
+                        <span th:text="${row.status().label}">Confirmed</span>
+                        <a class="count-pill legend-value" th:classappend="${row.count() == 0} ? 'is-zero'"
+                           th:href="@{/sponsors(status=${row.status()})}" th:text="${row.count()}"
+                           th:title="|View ${row.status().label} sponsors|">0</a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="data-table" id="status-table">
+                    <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th class="col-num">Recorded Amount</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${summary.sponsorsByStatus()}">
+                        <td><span th:replace="~{fragments/ui :: status(${row.status()})}"></span></td>
+                        <td class="col-num amount"
+                            th:text="${#numbers.formatDecimal(row.totalAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <h2 class="section-title">Sponsorship Tiers</h2>
+                    <p class="card-subtitle">Active sponsors by package.</p>
                 </div>
-                <a class="btn btn-sm btn-secondary" th:href="@{/events/{id}(id=${event.id})}">View</a>
-            </li>
-        </ul>
-    </section>
+                <a class="link-arrow" th:href="@{/reports}">Reports</a>
+            </div>
+            <div class="bar-chart">
+                <div class="bar-row" th:each="row : ${summary.sponsorsByTier()}">
+                    <span class="bar-label" th:text="${row.label()}">Gold</span>
+                    <div class="bar-track">
+                        <div class="bar-fill" th:classappend="${'fill-' + row.cssKey()}"
+                             th:style="|width: ${summary.tierWidth(row)}%|"></div>
+                    </div>
+                    <span class="bar-value" th:text="${row.count()}">0</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="card" id="activity-panel">
+            <div class="card-header">
+                <div>
+                    <h2 class="section-title">Recent Activity</h2>
+                    <p class="card-subtitle">Latest changes across the tracker.</p>
+                </div>
+                <a class="link-arrow" th:href="@{/activity}">View all</a>
+            </div>
+            <p class="empty-inline" th:if="${#lists.isEmpty(recentActivity)}">No activity recorded yet.</p>
+            <th:block th:unless="${#lists.isEmpty(recentActivity)}">
+                <ol th:replace="~{fragments/ui :: timeline(${recentActivity})}"></ol>
+            </th:block>
+        </section>
+    </div>
 </main>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>

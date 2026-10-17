@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Reports')}"></head>
+<body>
+<header th:replace="~{fragments/header :: header('reports')}"></header>
+
+<main class="page">
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">Insights</p>
+            <h1 class="page-title">Reports</h1>
+            <p class="page-subtitle">Funding per event, sponsorship packages and how payments come in.</p>
+        </div>
+        <div class="page-actions">
+            <a class="btn btn-secondary" th:href="@{/events/export.csv}">
+                <svg th:replace="~{fragments/icons :: download}"></svg>Event funding CSV</a>
+            <a class="btn btn-secondary" th:href="@{/sponsors/export.csv}">
+                <svg th:replace="~{fragments/icons :: download}"></svg>Sponsors CSV</a>
+        </div>
+    </div>
+
+    <section class="kpi-grid" aria-label="Totals">
+        <div class="card kpi">
+            <div class="kpi-top">
+                <span class="kpi-label">Committed</span>
+                <span class="kpi-icon kpi-icon-success"><svg th:replace="~{fragments/icons :: wallet}"></svg></span>
+            </div>
+            <span class="kpi-value" id="report-committed"
+                  th:text="${#numbers.formatDecimal(summary.committedAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</span>
+            <span class="kpi-note">Confirmed + Completed</span>
+        </div>
+        <div class="card kpi">
+            <div class="kpi-top">
+                <span class="kpi-label">Collected</span>
+                <span class="kpi-icon kpi-icon-info"><svg th:replace="~{fragments/icons :: check}"></svg></span>
+            </div>
+            <span class="kpi-value" id="report-collected"
+                  th:text="${#numbers.formatDecimal(summary.collectedAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</span>
+            <span class="kpi-note" th:text="|${summary.collectionRate()}% of committed|">0% of committed</span>
+        </div>
+        <div class="card kpi">
+            <div class="kpi-top">
+                <span class="kpi-label">Outstanding</span>
+                <span class="kpi-icon kpi-icon-warning"><svg th:replace="~{fragments/icons :: clock}"></svg></span>
+            </div>
+            <span class="kpi-value" id="report-outstanding"
+                  th:text="${#numbers.formatDecimal(summary.outstandingAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</span>
+            <a class="kpi-note" th:href="@{/sponsors(payment='OVERDUE')}"
+               th:text="|${summary.overduePayments()} overdue payment(s)|">0 overdue</a>
+        </div>
+        <div class="card kpi">
+            <div class="kpi-top">
+                <span class="kpi-label">Pipeline</span>
+                <span class="kpi-icon"><svg th:replace="~{fragments/icons :: trend}"></svg></span>
+            </div>
+            <span class="kpi-value" th:text="${#numbers.formatDecimal(summary.openAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</span>
+            <span class="kpi-note">Proposed + Pending</span>
+        </div>
+    </section>
+
+    <section class="card table-card" id="funding-report">
+        <div class="card-header">
+            <div>
+                <h2 class="section-title">Event funding</h2>
+                <p class="card-subtitle">Committed sponsorship against each event's target, and how much has been collected.</p>
+            </div>
+            <ul class="legend" style="margin: 0">
+                <li><span class="legend-dot fill-primary"></span>Committed</li>
+                <li><span class="legend-dot fill-target"></span>Target</li>
+            </ul>
+        </div>
+        <div class="empty-state" th:if="${#lists.isEmpty(funding)}">
+            <span class="empty-state-icon"><svg th:replace="~{fragments/icons :: chart}"></svg></span>
+            <p class="empty-state-title">No events yet.</p>
+        </div>
+        <div class="table-wrapper" th:unless="${#lists.isEmpty(funding)}">
+            <table class="data-table responsive" id="funding-table">
+                <thead>
+                <tr>
+                    <th>Event</th>
+                    <th style="min-width: 220px">Progress</th>
+                    <th class="col-num">Target</th>
+                    <th class="col-num">Committed</th>
+                    <th class="col-num">Pipeline</th>
+                    <th class="col-num">Collected</th>
+                    <th class="col-num">Outstanding</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${funding}">
+                    <td class="cell-primary" data-label="Event">
+                        <div class="cell-stack">
+                            <a class="cell-title" th:href="@{/events/{id}(id=${row.event().id})}" th:text="${row.event().name}">Tech Fest</a>
+                            <p class="cell-sub" th:text="|${#temporals.format(row.event().eventDate, 'dd MMM yyyy')} · ${row.sponsorCount()} sponsor(s)|">05 Nov 2026</p>
+                        </div>
+                    </td>
+                    <td data-label="Progress">
+                        <div class="cell-fill">
+                            <!-- Track = the larger of target and committed across all events; bar = committed -->
+                            <div class="bar-track" style="position: relative">
+                                <div class="bar-fill fill-target" style="position: absolute; inset: 0 auto 0 0"
+                                     th:if="${row.hasTarget()}"
+                                     th:style="|position: absolute; inset: 0 auto 0 0; width: ${charts.width(row.target(), fundingMax)}%|"></div>
+                                <div class="bar-fill fill-primary" style="position: relative"
+                                     th:style="|position: relative; width: ${charts.width(row.committed(), fundingMax)}%|"></div>
+                            </div>
+                            <p class="cell-sub" th:text="${row.hasTarget()} ? |${row.percentOfTarget()}% of target| : 'No target'">40% of target</p>
+                        </div>
+                    </td>
+                    <td class="col-num" data-label="Target">
+                        <span class="amount" th:text="${row.hasTarget()} ? ${#numbers.formatDecimal(row.target(), 1, 'COMMA', 2, 'POINT')} : '—'">0.00</span></td>
+                    <td class="col-num amount" data-label="Committed"
+                        th:text="${#numbers.formatDecimal(row.committed(), 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                    <td class="col-num" data-label="Pipeline"
+                        th:text="${#numbers.formatDecimal(row.pipeline(), 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                    <td class="col-num" data-label="Collected"
+                        th:text="${#numbers.formatDecimal(row.collected(), 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                    <td class="col-num" data-label="Outstanding"
+                        th:classappend="${row.outstanding().signum() > 0} ? 'text-danger'"
+                        th:text="${#numbers.formatDecimal(row.outstanding(), 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                </tr>
+                </tbody>
+                <tfoot>
+                <tr>
+                    <td colspan="2">Total</td>
+                    <td class="col-num" th:text="${#numbers.formatDecimal(fundingTotals.target, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                    <td class="col-num" th:text="${#numbers.formatDecimal(fundingTotals.committed, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                    <td class="col-num" th:text="${#numbers.formatDecimal(fundingTotals.pipeline, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                    <td class="col-num" th:text="${#numbers.formatDecimal(fundingTotals.collected, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                    <td class="col-num" th:text="${#numbers.formatDecimal(fundingTotals.outstanding, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+
+    <div class="grid-3">
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <h2 class="section-title">Sponsorship tiers</h2>
+                    <p class="card-subtitle">Active sponsors by package.</p>
+                </div>
+            </div>
+            <p class="empty-inline" th:if="${tierTotal == 0}">No active sponsors yet.</p>
+            <div class="donut-wrap" th:unless="${tierTotal == 0}">
+                <div class="donut" role="img" aria-label="Share of active sponsors by tier" th:style="${tierDonut}">
+                    <div class="donut-center">
+                        <span class="donut-value" th:text="${tierTotal}">0</span>
+                        <span class="donut-label">active</span>
+                    </div>
+                </div>
+                <ul class="legend">
+                    <li th:each="row : ${tiers}">
+                        <span class="legend-dot" th:classappend="${'fill-' + row.cssKey()}"></span>
+                        <a th:href="${row.tier() != null} ? @{/sponsors(tier=${row.tier()})} : @{/sponsors}" th:text="${row.label()}">Gold</a>
+                        <span class="legend-value" th:text="${row.count()}">0</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <h2 class="section-title">Payments by method</h2>
+                    <p class="card-subtitle">Total received per payment method.</p>
+                </div>
+            </div>
+            <div class="bar-chart">
+                <div class="bar-row" th:each="row : ${methods}">
+                    <span class="bar-label" th:text="${row.method().label}">UPI</span>
+                    <div class="bar-track">
+                        <div class="bar-fill fill-accent" th:style="|width: ${charts.width(row.amount(), methodMax)}%|"></div>
+                    </div>
+                    <span class="bar-value">
+                        <span th:text="${#numbers.formatDecimal(row.amount(), 1, 'COMMA', 0, 'POINT')}">0</span>
+                        <small th:text="|${row.count()} payment(s)|">0 payments</small>
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <h2 class="section-title">Top sponsors</h2>
+                    <p class="card-subtitle">Largest sponsorships (not cancelled).</p>
+                </div>
+            </div>
+            <p class="empty-inline" th:if="${#lists.isEmpty(topSponsors)}">No sponsorship amounts recorded yet.</p>
+            <ul class="list" th:unless="${#lists.isEmpty(topSponsors)}">
+                <li class="list-item" th:each="sponsor : ${topSponsors}">
+                    <span class="avatar" aria-hidden="true" th:classappend="${'avatar-' + (sponsor.id % 6)}"
+                          th:text="${#strings.substring(sponsor.name, 0, 1)}">A</span>
+                    <div class="list-item-main">
+                        <a class="list-item-title" th:href="@{/sponsors/{id}(id=${sponsor.id})}" th:text="${sponsor.name}">Acme</a>
+                        <p class="list-item-meta" th:text="${sponsor.event != null} ? ${sponsor.event.name} : 'Not linked'">Tech Fest</p>
+                    </div>
+                    <div class="list-item-end">
+                        <span class="amount" th:text="${#numbers.formatDecimal(sponsor.sponsorshipAmount, 1, 'COMMA', 0, 'POINT')}">0</span>
+                        <span th:replace="~{fragments/ui :: payment(${sponsor.paymentStatus})}"></span>
+                    </div>
+                </li>
+            </ul>
+        </section>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

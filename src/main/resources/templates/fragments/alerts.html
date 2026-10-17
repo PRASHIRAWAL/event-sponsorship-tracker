@@ -2,19 +2,14 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <body>
 <!--
-    Display-only severity for each existing alert rule. It changes how an alert looks, not which
-    alerts are raised (that logic stays in AlertService).
-      High   - unresolved money or decisions: committed without amount, undecided for a past event
-      Medium - follow-up needed soon: no email or phone, upcoming event without sponsors
+    Severity badge for an alert rule. The severity itself is defined on AlertRule:
+      High   - unresolved money or decisions: committed without amount, undecided for a past event, payment overdue
+      Medium - follow-up needed soon: no email or phone, upcoming event without sponsors or below target
       Low    - incomplete records: missing contact person, not linked to an event
-    Usage: <span th:replace="~{fragments/alerts :: severity(${alert.rule().name()})}"></span>
+    Usage: <span th:replace="~{fragments/alerts :: severity(${alert.rule()})}"></span>
 -->
-<th:block th:fragment="severity(ruleName)" th:switch="${ruleName}">
-    <span th:case="'SPONSOR_COMMITTED_WITHOUT_AMOUNT'" class="severity severity-high">High</span>
-    <span th:case="'SPONSOR_UNDECIDED_FOR_PAST_EVENT'" class="severity severity-high">High</span>
-    <span th:case="'SPONSOR_NO_CONTACT_DETAILS'" class="severity severity-medium">Medium</span>
-    <span th:case="'EVENT_WITHOUT_ACTIVE_SPONSORS'" class="severity severity-medium">Medium</span>
-    <span th:case="*" class="severity severity-low">Low</span>
-</th:block>
+<span th:fragment="severity(rule)" class="severity"
+      th:classappend="${'severity-' + #strings.toLowerCase(rule.severity.name())}"
+      th:text="${rule.severity.label}">High</span>
 </body>
 </html>

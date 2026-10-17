@@ -4,25 +4,57 @@
     Shared page parts.
     Head:   <head th:replace="~{fragments/layout :: head('Events')}"></head>
     Footer: <footer th:replace="~{fragments/layout :: footer}"></footer>
+            (also adds the confirmation dialog and the page script)
 -->
 <head th:fragment="head(title)">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#2563eb">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="description" content="Track events, sponsors, sponsorship payments and funding targets.">
     <title th:text="${title} + ' | Event Sponsorship Tracker'">Event Sponsorship Tracker</title>
     <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}">
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <!-- Apply a saved light/dark choice before the first paint to avoid a flash of the wrong theme -->
+    <script>
+        try {
+            var savedTheme = localStorage.getItem("est-theme");
+            if (savedTheme === "dark" || savedTheme === "light") {
+                document.documentElement.setAttribute("data-theme", savedTheme);
+            }
+        } catch (e) {
+        }
+    </script>
 </head>
 <body>
-<footer class="site-footer" th:fragment="footer">
-    <div class="site-footer-inner">
-        <span>Event Sponsorship Tracker &middot; DevOps project</span>
-        <nav class="site-footer-links" aria-label="Footer">
-            <a th:href="@{/api/events}">Events API</a>
-            <a th:href="@{/api/sponsors}">Sponsors API</a>
-            <a th:href="@{/actuator/health}">Health check</a>
-        </nav>
-    </div>
-</footer>
+<th:block th:fragment="footer">
+    <footer class="site-footer">
+        <div class="site-footer-inner">
+            <span>Event Sponsorship Tracker &middot; DevOps project &middot; Spring Boot, Docker, Jenkins &amp; Ansible</span>
+            <nav class="site-footer-links" aria-label="Footer">
+                <a th:href="@{/api/events}">Events API</a>
+                <a th:href="@{/api/sponsors}">Sponsors API</a>
+                <a th:href="@{/api/reports/events}">Reports API</a>
+                <a th:href="@{/actuator/health}">Health check</a>
+            </nav>
+        </div>
+    </footer>
+
+    <dialog class="modal" id="confirm-dialog" aria-labelledby="confirm-title">
+        <form method="dialog">
+            <div class="modal-body">
+                <span class="modal-icon"><svg th:replace="~{fragments/icons :: trash}"></svg></span>
+                <div>
+                    <h2 class="modal-title" id="confirm-title" data-confirm-title>Are you sure?</h2>
+                    <p class="modal-text" data-confirm-detail>This cannot be undone.</p>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" value="cancel" autofocus>Cancel</button>
+                <button class="btn btn-danger" value="confirm" id="confirm-yes">Delete</button>
+            </div>
+        </form>
+    </dialog>
+    <script th:src="@{/js/app.js}" defer></script>
+</th:block>
 </body>
 </html>

@@ -62,6 +62,27 @@
 
         <section class="form-section">
             <div>
+                <h2 class="form-section-title">Funding goal</h2>
+                <p class="form-section-hint">How much sponsorship this event needs. Progress counts Confirmed and
+                    Completed sponsors; an alert is raised when the event is close and still below target.</p>
+            </div>
+            <div class="form-fields">
+                <div class="field">
+                    <label class="label" for="sponsorshipTarget">Sponsorship Target <span class="optional">(optional)</span></label>
+                    <div class="input-affix">
+                        <span class="affix" aria-hidden="true">₹</span>
+                        <input class="input" type="number" id="sponsorshipTarget" th:field="*{sponsorshipTarget}"
+                               min="0.01" step="0.01" placeholder="e.g. 250000"
+                               th:classappend="${#fields.hasErrors('sponsorshipTarget')} ? 'invalid'">
+                    </div>
+                    <p class="field-error" th:if="${#fields.hasErrors('sponsorshipTarget')}"
+                       th:errors="*{sponsorshipTarget}">Error</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <div>
                 <h2 class="form-section-title">Description</h2>
                 <p class="form-section-hint">Optional notes about what the event is and who it is for.</p>
             </div>
@@ -69,9 +90,9 @@
                 <div class="field">
                     <label class="label" for="description">Description <span class="optional">(optional)</span></label>
                     <textarea class="textarea" id="description" th:field="*{description}" rows="4" maxlength="500"
-                              placeholder="What is this event about?"
+                              placeholder="What is this event about?" data-count="description-count"
                               th:classappend="${#fields.hasErrors('description')} ? 'invalid'"></textarea>
-                    <p class="field-hint">Up to 500 characters.</p>
+                    <p class="char-count" id="description-count" aria-live="polite">Up to 500 characters.</p>
                     <p class="field-error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">Error</p>
                 </div>
             </div>
@@ -79,7 +100,7 @@
 
         <div class="form-actions">
             <span class="form-actions-note">Fields marked <span class="required">*</span> are required.</span>
-            <a class="btn btn-secondary" th:href="@{/events}">Cancel</a>
+            <a class="btn btn-secondary" th:href="${event.id == null} ? @{/events} : @{/events/{id}(id=${event.id})}">Cancel</a>
             <button type="submit" class="btn btn-primary" id="save-event"
                     th:text="${event.id == null} ? 'Create Event' : 'Save Changes'">Save</button>
         </div>
