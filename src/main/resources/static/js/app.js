@@ -104,7 +104,91 @@
                 user.value = button.getAttribute("data-fill-user");
                 pass.value = button.getAttribute("data-fill-pass");
                 pass.focus();
+                button.classList.remove("just-filled");
+                void button.offsetWidth; // restart the highlight animation
+                button.classList.add("just-filled");
             }
+        });
+    });
+
+    var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // Caps Lock hint while typing the password
+    var capsWarning = document.getElementById("caps-warning");
+    var passwordField = document.getElementById("password");
+    if (capsWarning && passwordField) {
+        var checkCaps = function (event) {
+            if (event.getModifierState) {
+                capsWarning.hidden = !event.getModifierState("CapsLock");
+            }
+        };
+        passwordField.addEventListener("keydown", checkCaps);
+        passwordField.addEventListener("keyup", checkCaps);
+        passwordField.addEventListener("blur", function () {
+            capsWarning.hidden = true;
+        });
+    }
+
+    // Spinner on the sign-in button while the form is submitting
+    document.querySelectorAll("[data-login-form]").forEach(function (form) {
+        form.addEventListener("submit", function () {
+            var button = form.querySelector("button[type=submit]");
+            if (button) {
+                button.classList.add("is-loading");
+                button.setAttribute("aria-busy", "true");
+            }
+        });
+    });
+
+    // Numbers that count up from zero: <span data-count-to="82" data-format="money">
+    document.querySelectorAll("[data-count-to]").forEach(function (element) {
+        var target = Number(element.getAttribute("data-count-to")) || 0;
+        var money = element.getAttribute("data-format") === "money";
+        var show = function (value) {
+            element.textContent = money ? Math.round(value).toLocaleString("en-IN") : String(Math.round(value));
+        };
+        if (reduceMotion) {
+            show(target);
+            return;
+        }
+        var duration = 1800;
+        var startAt = null;
+        var step = function (time) {
+            if (startAt === null) {
+                startAt = time;
+            }
+            var progress = Math.min((time - startAt) / duration, 1);
+            show(target * (1 - Math.pow(1 - progress, 3))); // ease-out
+            if (progress < 1) {
+                requestAnimationFrame(step);
+            }
+        };
+        setTimeout(function () {
+            requestAnimationFrame(step);
+        }, 900);
+    });
+
+    // Floating cards drift slightly with the mouse (data-depth = how far)
+    document.querySelectorAll("[data-parallax]").forEach(function (stage) {
+        if (reduceMotion) {
+            return;
+        }
+        var cards = stage.querySelectorAll("[data-depth]");
+        var frame = null;
+        window.addEventListener("pointermove", function (event) {
+            if (frame) {
+                return;
+            }
+            frame = requestAnimationFrame(function () {
+                frame = null;
+                var x = event.clientX / window.innerWidth - 0.5;
+                var y = event.clientY / window.innerHeight - 0.5;
+                cards.forEach(function (card) {
+                    var depth = Number(card.getAttribute("data-depth")) || 0;
+                    card.style.setProperty("--px", (-x * depth).toFixed(1) + "px");
+                    card.style.setProperty("--py", (-y * depth).toFixed(1) + "px");
+                });
+            });
         });
     });
 
