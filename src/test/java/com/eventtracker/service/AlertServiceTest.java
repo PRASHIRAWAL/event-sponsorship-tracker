@@ -103,6 +103,67 @@ class AlertServiceTest {
         assertThat(AlertService.evaluate(List.of(event(1L, TODAY.minusDays(30))), List.of(), TODAY)).isEmpty();
     }
 
+    @Test
+    void unpaidBalanceAfterDueDateIsFlaggedAsOverdue() {
+        Event event = event(1L, TODAY.plusDays(60));
+        Sponsor overdue = completeSponsor(10L, SponsorshipStatus.CONFIRMED, event);
+        overdue.setPaymentDueDate(TODAY.minusDays(1));
+        overdue.setAmountPaid(new BigDecimal("2500"));
+        Sponsor paidLate = completeSponsor(11L, SponsorshipStatus.CONFIRMED, event);
+        paidLate.setPaymentDueDate(TODAY.minusDays(1));
+        paidLate.setAmountPaid(new BigDecimal("10000"));
+        Sponsor dueToday = completeSponsor(12L, SponsorshipStatus.CONFIRMED, event);
+        dueToday.setPaymentDueDate(TODAY);
+
+        List<Alert> alerts = AlertService.evaluate(List.of(event), List.of(overdue, paidLate, dueToday), TODAY);
+
+        assertThat(alerts).extracting(Alert::rule).containsExactly(AlertRule.SPONSOR_PAYMENT_OVERDUE);
+        assertThat(alerts.get(0).subjectId()).isEqualTo(10L);
+    }
+
+    @Test
+    void cancelledSponsorWithPastDueDateIsNotOverdue() {
+        Event event = event(1L, TODAY.plusDays(60));
+        Sponsor cancelled = completeSponsor(10L, SponsorshipStatus.CANCELLED, event);
+        cancelled.setPaymentDueDate(TODAY.minusDays(30));
+        Sponsor active = completeSponsor(11L, SponsorshipStatus.CONFIRMED, event);
+
+        assertThat(AlertService.evaluate(List.of(event), List.of(cancelled, active), TODAY)).isEmpty();
+    }
+
+    @Test
+    void eventSoonAndBelowTargetIsFlagged() {
+        Event soon = event(1L, TODAY.plusDays(AlertRule.TARGET_WINDOW_DAYS));
+        soon.setSponsorshipTarget(new BigDecimal("50000"));
+        Event later = event(2L, TODAY.plusDays(AlertRule.TARGET_WINDOW_DAYS + 1));
+        later.setSponsorshipTarget(new BigDecimal("50000"));
+        Event funded = event(3L, TODAY.plusDays(5));
+        funded.setSponsorshipTarget(new BigDecimal("10000"));
+        // Proposed sponsorships do not count towards the target
+        Sponsor proposed = completeSponsor(10L, SponsorshipStatus.PROPOSED, soon);
+        proposed.setSponsorshipAmount(new BigDecimal("90000"));
+
+        List<Alert> alerts = AlertService.evaluate(List.of(soon, later, funded), List.of(
+                completeSponsor(11L, SponsorshipStatus.CONFIRMED, soon),
+                proposed,
+                completeSponsor(12L, SponsorshipStatus.CONFIRMED, later),
+                completeSponsor(13L, SponsorshipStatus.COMPLETED, funded)), TODAY);
+
+        assertThat(alerts).extracting(Alert::rule).containsExactly(AlertRule.EVENT_BELOW_TARGET);
+        assertThat(alerts.get(0).subjectId()).isEqualTo(1L);
+    }
+
+    @Test
+    void alertsAreOrderedBySeverity() {
+        Sponsor incomplete = new Sponsor("Acme Corp", SponsorshipStatus.CONFIRMED);
+        incomplete.setId(10L);
+
+        List<Alert> alerts = AlertService.evaluate(List.of(), List.of(incomplete), TODAY);
+
+        assertThat(alerts).extracting(alert -> alert.rule().getSeverity()).isSorted();
+        assertThat(alerts.get(0).rule()).isEqualTo(AlertRule.SPONSOR_COMMITTED_WITHOUT_AMOUNT);
+    }
+
     private static Event event(Long id, LocalDate date) {
         Event event = new Event("Event " + id, date, "Main Auditorium", null);
         event.setId(id);

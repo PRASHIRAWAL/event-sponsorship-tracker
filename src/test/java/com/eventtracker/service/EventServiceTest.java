@@ -2,6 +2,7 @@ package com.eventtracker.service;
 
 import com.eventtracker.model.Event;
 import com.eventtracker.repository.EventRepository;
+import com.eventtracker.repository.SponsorRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,6 +25,12 @@ class EventServiceTest {
 
     @Mock
     private EventRepository eventRepository;
+
+    @Mock
+    private SponsorRepository sponsorRepository;
+
+    @Mock
+    private ActivityService activityService;
 
     @InjectMocks
     private EventService eventService;

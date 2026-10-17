@@ -5,6 +5,7 @@ import com.eventtracker.model.Sponsor;
 import com.eventtracker.model.SponsorForm;
 import com.eventtracker.model.SponsorshipStatus;
 import com.eventtracker.repository.EventRepository;
+import com.eventtracker.repository.PaymentRepository;
 import com.eventtracker.repository.SponsorRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +32,12 @@ class SponsorServiceTest {
 
     @Mock
     private EventRepository eventRepository;
+
+    @Mock
+    private PaymentRepository paymentRepository;
+
+    @Mock
+    private ActivityService activityService;
 
     @InjectMocks
     private SponsorService sponsorService;

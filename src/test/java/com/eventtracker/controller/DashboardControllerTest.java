@@ -1,5 +1,6 @@
 package com.eventtracker.controller;
 
+import com.eventtracker.model.AlertRule;
 import com.eventtracker.model.Event;
 import com.eventtracker.model.Sponsor;
 import com.eventtracker.model.SponsorshipStatus;
@@ -108,11 +109,12 @@ class DashboardControllerTest {
                 .andReturn().getResponse().getContentAsString();
 
         // Globex: undecided for a past event (High), no email or phone (Medium), missing contact person (Low)
-        assertThat(countOccurrences(html, "class=\"card alert-card\"")).isEqualTo(3);
+        assertThat(countOccurrences(html, "class=\"card alert-card ")).isEqualTo(3);
         assertThat(countOccurrences(html, "class=\"alert-card-icon\"")).isEqualTo(3);
         assertThat(html).contains("severity severity-high", "severity severity-medium", "severity severity-low");
-        // One severity badge per rule card as well (6 rules)
-        assertThat(countOccurrences(html, "class=\"card rule-card\"")).isEqualTo(6);
+        // One severity badge per rule card as well (8 rules)
+        assertThat(countOccurrences(html, "class=\"card rule-card\"")).isEqualTo(AlertRule.values().length);
+        assertThat(AlertRule.values()).hasSize(8);
     }
 
     @Test
