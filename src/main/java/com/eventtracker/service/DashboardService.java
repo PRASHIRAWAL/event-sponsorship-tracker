@@ -2,7 +2,9 @@ package com.eventtracker.service;
 
 import com.eventtracker.model.DashboardSummary;
 import com.eventtracker.model.Event;
+import com.eventtracker.model.EventFunding;
 import com.eventtracker.model.EventStatus;
+import com.eventtracker.model.PaymentStatus;
 import com.eventtracker.model.Sponsor;
 import com.eventtracker.model.SponsorshipStatus;
 import com.eventtracker.model.StatusSummary;
@@ -15,6 +17,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.eventtracker.service.FundingCalculator.totalAmount;
+import static com.eventtracker.service.FundingCalculator.totalPaid;
 
 @Service
 @Transactional(readOnly = true)
@@ -34,11 +39,22 @@ public class DashboardService {
         return summarize(events, sponsors, LocalDate.now());
     }
 
+    /** Funding progress of the next upcoming events (soonest first), for the dashboard panel. */
+    public List<EventFunding> upcomingFunding(int limit) {
+        LocalDate today = LocalDate.now();
+        List<Event> upcoming = eventRepository.findAllByOrderByEventDateAscIdAsc().stream()
+                .filter(event -> EventStatus.of(event.getEventDate(), today) == EventStatus.UPCOMING)
+                .limit(limit)
+                .toList();
+        return List.copyOf(FundingCalculator.byEvent(upcoming, sponsorRepository.findAll()).values());
+    }
+
     /** Calculates the dashboard indicators. Kept free of database access so it is easy to test. */
     static DashboardSummary summarize(List<Event> events, List<Sponsor> sponsors, LocalDate today) {
-        long upcoming = events.stream()
+        List<Event> upcomingEvents = events.stream()
                 .filter(event -> EventStatus.of(event.getEventDate(), today) == EventStatus.UPCOMING)
-                .count();
+                .toList();
+        long upcoming = upcomingEvents.size();
 
         List<StatusSummary> byStatus = new ArrayList<>();
         for (SponsorshipStatus status : SponsorshipStatus.values()) {
@@ -48,25 +64,34 @@ public class DashboardService {
             byStatus.add(new StatusSummary(status, matching.size(), totalAmount(matching)));
         }
 
-        BigDecimal committed = totalAmount(sponsors.stream()
+        List<Sponsor> committedSponsors = sponsors.stream()
                 .filter(sponsor -> sponsor.getSponsorshipStatus().isCommitted())
-                .toList());
+                .toList();
+        BigDecimal committed = totalAmount(committedSponsors);
+        BigDecimal collected = totalPaid(committedSponsors);
         BigDecimal open = totalAmount(sponsors.stream()
                 .filter(sponsor -> sponsor.getSponsorshipStatus().isOpen())
                 .toList());
         long withoutAmount = sponsors.stream()
                 .filter(sponsor -> sponsor.getSponsorshipAmount() == null)
                 .count();
+        long overdue = sponsors.stream()
+                .filter(sponsor -> sponsor.paymentStatusOn(today) == PaymentStatus.OVERDUE)
+                .count();
         long alertCount = AlertService.evaluate(events, sponsors, today).size();
 
-        return new DashboardSummary(events.size(), upcoming, events.size() - upcoming, sponsors.size(),
-                committed, open, withoutAmount, alertCount, byStatus);
-    }
+        BigDecimal totalTarget = BigDecimal.ZERO;
+        BigDecimal upcomingCommitted = BigDecimal.ZERO;
+        for (EventFunding funding : FundingCalculator.byEvent(upcomingEvents, sponsors).values()) {
+            if (funding.hasTarget()) {
+                totalTarget = totalTarget.add(funding.target());
+                upcomingCommitted = upcomingCommitted.add(funding.committed());
+            }
+        }
 
-    private static BigDecimal totalAmount(List<Sponsor> sponsors) {
-        return sponsors.stream()
-                .map(Sponsor::getSponsorshipAmount)
-                .filter(amount -> amount != null)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new DashboardSummary(events.size(), upcoming, events.size() - upcoming, sponsors.size(),
+                committed, open, withoutAmount, alertCount, byStatus,
+                collected, committed.subtract(collected).max(BigDecimal.ZERO), overdue,
+                totalTarget, upcomingCommitted, FundingCalculator.byTier(sponsors));
     }
 }

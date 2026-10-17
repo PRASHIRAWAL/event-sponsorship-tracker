@@ -7,11 +7,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
@@ -41,6 +44,12 @@ public class Event {
     @Size(max = 500, message = "Description must be at most 500 characters")
     @Column(name = "description", length = 500)
     private String description;
+
+    /** Fundraising goal for the event; optional. Committed sponsorships are measured against it. */
+    @DecimalMin(value = "0.01", message = "Sponsorship target must be greater than zero")
+    @Digits(integer = 12, fraction = 2, message = "Sponsorship target can have at most 12 digits and 2 decimals")
+    @Column(name = "sponsorship_target", precision = 14, scale = 2)
+    private BigDecimal sponsorshipTarget;
 
     public Event() {
     }
@@ -92,9 +101,23 @@ public class Event {
         this.description = description;
     }
 
+    public BigDecimal getSponsorshipTarget() {
+        return sponsorshipTarget;
+    }
+
+    public void setSponsorshipTarget(BigDecimal sponsorshipTarget) {
+        this.sponsorshipTarget = sponsorshipTarget;
+    }
+
     /** Derived from the event date; not stored in the database and not part of the API response. */
     @JsonIgnore
     public EventStatus getStatus() {
         return EventStatus.of(eventDate, LocalDate.now());
+    }
+
+    /** Days from today until the event (negative for past events); not part of the API response. */
+    @JsonIgnore
+    public long getDaysUntil() {
+        return LocalDate.now().until(eventDate, java.time.temporal.ChronoUnit.DAYS);
     }
 }

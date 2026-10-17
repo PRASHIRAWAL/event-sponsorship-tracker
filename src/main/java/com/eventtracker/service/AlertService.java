@@ -3,7 +3,9 @@ package com.eventtracker.service;
 import com.eventtracker.model.Alert;
 import com.eventtracker.model.AlertRule;
 import com.eventtracker.model.Event;
+import com.eventtracker.model.EventFunding;
 import com.eventtracker.model.EventStatus;
+import com.eventtracker.model.PaymentStatus;
 import com.eventtracker.model.Sponsor;
 import com.eventtracker.model.SponsorshipStatus;
 import com.eventtracker.repository.EventRepository;
@@ -12,9 +14,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -34,7 +39,10 @@ public class AlertService {
                 sponsorRepository.findAll(), LocalDate.now());
     }
 
-    /** Applies every {@link AlertRule} to the given data. Kept free of database access so it is easy to test. */
+    /**
+     * Applies every {@link AlertRule} to the given data and returns the alerts with the most severe first
+     * (the order within a severity is stable). Kept free of database access so it is easy to test.
+     */
     static List<Alert> evaluate(List<Event> events, List<Sponsor> sponsors, LocalDate today) {
         List<Alert> alerts = new ArrayList<>();
         Set<Long> eventsWithActiveSponsors = new HashSet<>();
@@ -64,14 +72,27 @@ public class AlertService {
                     && EventStatus.of(event.getEventDate(), today) == EventStatus.PAST) {
                 alerts.add(Alert.forSponsor(AlertRule.SPONSOR_UNDECIDED_FOR_PAST_EVENT, sponsor));
             }
-        }
-
-        for (Event event : events) {
-            if (EventStatus.of(event.getEventDate(), today) == EventStatus.UPCOMING
-                    && !eventsWithActiveSponsors.contains(event.getId())) {
-                alerts.add(Alert.forEvent(AlertRule.EVENT_WITHOUT_ACTIVE_SPONSORS, event));
+            if (sponsor.paymentStatusOn(today) == PaymentStatus.OVERDUE) {
+                alerts.add(Alert.forSponsor(AlertRule.SPONSOR_PAYMENT_OVERDUE, sponsor));
             }
         }
+
+        Map<Long, EventFunding> funding = FundingCalculator.byEvent(events, sponsors);
+        for (Event event : events) {
+            if (EventStatus.of(event.getEventDate(), today) != EventStatus.UPCOMING) {
+                continue;
+            }
+            if (!eventsWithActiveSponsors.contains(event.getId())) {
+                alerts.add(Alert.forEvent(AlertRule.EVENT_WITHOUT_ACTIVE_SPONSORS, event));
+            }
+            EventFunding eventFunding = funding.get(event.getId());
+            long daysUntil = ChronoUnit.DAYS.between(today, event.getEventDate());
+            if (eventFunding.hasTarget() && daysUntil <= AlertRule.TARGET_WINDOW_DAYS
+                    && eventFunding.committed().compareTo(eventFunding.target()) < 0) {
+                alerts.add(Alert.forEvent(AlertRule.EVENT_BELOW_TARGET, event));
+            }
+        }
+        alerts.sort(Comparator.comparing(alert -> alert.rule().getSeverity()));
         return alerts;
     }
 

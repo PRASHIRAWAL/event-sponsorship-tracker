@@ -21,4 +21,8 @@ public record Alert(AlertRule rule, String subjectType, Long subjectId, String s
     public String getTitle() {
         return rule.getTitle();
     }
+
+    public AlertRule.Severity getSeverity() {
+        return rule.getSeverity();
+    }
 }

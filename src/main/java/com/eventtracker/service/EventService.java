@@ -1,9 +1,14 @@
 package com.eventtracker.service;
 
+import com.eventtracker.model.ActivityType;
+import com.eventtracker.model.Alert;
 import com.eventtracker.model.Event;
 import com.eventtracker.model.EventStatus;
 import com.eventtracker.repository.EventRepository;
 import com.eventtracker.repository.EventSpecifications;
+import com.eventtracker.repository.SponsorRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -17,9 +22,14 @@ import java.util.List;
 public class EventService {
 
     private final EventRepository eventRepository;
+    private final SponsorRepository sponsorRepository;
+    private final ActivityService activityService;
 
-    public EventService(EventRepository eventRepository) {
+    public EventService(EventRepository eventRepository, SponsorRepository sponsorRepository,
+                        ActivityService activityService) {
         this.eventRepository = eventRepository;
+        this.sponsorRepository = sponsorRepository;
+        this.activityService = activityService;
     }
 
     public List<Event> findAll() {
@@ -28,10 +38,18 @@ public class EventService {
 
     /** Searches by keyword (name or venue) and derived status; null or blank filters are ignored. */
     public List<Event> search(String keyword, EventStatus status) {
-        Specification<Event> specification = Specification
+        return eventRepository.findAll(specification(keyword, status), Sort.by("eventDate", "id"));
+    }
+
+    /** Paged search for the event list; the pageable carries the (already validated) sort order. */
+    public Page<Event> searchPage(String keyword, EventStatus status, Pageable pageable) {
+        return eventRepository.findAll(specification(keyword, status), pageable);
+    }
+
+    private static Specification<Event> specification(String keyword, EventStatus status) {
+        return Specification
                 .where(EventSpecifications.matchesKeyword(keyword))
                 .and(EventSpecifications.hasStatus(status, LocalDate.now()));
-        return eventRepository.findAll(specification, Sort.by("eventDate", "id"));
     }
 
     public Event findById(Long id) {
@@ -44,7 +62,10 @@ public class EventService {
         // Ignore any client-supplied id so a create can never overwrite an existing event
         event.setId(null);
         trimFields(event);
-        return eventRepository.save(event);
+        Event saved = eventRepository.save(event);
+        activityService.record(ActivityType.CREATED, Alert.EVENT, saved.getId(),
+                "Event " + saved.getName() + " created for " + saved.getEventDate());
+        return saved;
     }
 
     @Transactional
@@ -54,8 +75,30 @@ public class EventService {
         existing.setEventDate(changes.getEventDate());
         existing.setVenue(changes.getVenue());
         existing.setDescription(changes.getDescription());
+        existing.setSponsorshipTarget(changes.getSponsorshipTarget());
         trimFields(existing);
-        return eventRepository.save(existing);
+        Event saved = eventRepository.save(existing);
+        activityService.record(ActivityType.UPDATED, Alert.EVENT, saved.getId(), "Event " + saved.getName() + " updated");
+        return saved;
+    }
+
+    /**
+     * Deletes the event. Its sponsors are kept and simply unlinked, so no sponsor or payment history is lost.
+     *
+     * @return the number of sponsors that were unlinked
+     */
+    @Transactional
+    public int delete(Long id) {
+        Event event = findById(id);
+        int unlinked = sponsorRepository.unlinkFromEvent(id);
+        eventRepository.deleteById(id);
+        activityService.record(ActivityType.DELETED, Alert.EVENT, id, "Event " + event.getName() + " deleted"
+                + (unlinked == 0 ? "" : " (" + unlinked + " sponsor(s) unlinked)"));
+        return unlinked;
+    }
+
+    public long countSponsors(Long eventId) {
+        return sponsorRepository.countByEventId(eventId);
     }
 
     private void trimFields(Event event) {

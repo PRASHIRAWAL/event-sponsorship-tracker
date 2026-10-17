@@ -68,11 +68,11 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- H2 In-Memory Database for Tests (no MySQL needed to run tests) -->
+        <!-- H2 In-Memory Database for tests and the local "dev" profile (no MySQL needed) -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>test</scope>
+            <scope>runtime</scope>
         </dependency>
         <!-- Selenium WebDriver for browser end-to-end tests (run with: mvn verify -Pe2e) -->
         <dependency>

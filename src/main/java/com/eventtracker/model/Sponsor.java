@@ -15,6 +15,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "sponsors")
@@ -37,6 +38,9 @@ public class Sponsor {
     @Column(name = "phone", length = 20)
     private String phone;
 
+    @Column(name = "industry", length = 80)
+    private String industry;
+
     @Column(name = "sponsorship_amount", precision = 14, scale = 2)
     private BigDecimal sponsorshipAmount;
 
@@ -45,6 +49,24 @@ public class Sponsor {
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "sponsorship_status", nullable = false, length = 20)
     private SponsorshipStatus sponsorshipStatus;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "sponsorship_tier", length = 20)
+    private SponsorshipTier tier;
+
+    @Column(name = "payment_due_date")
+    private LocalDate paymentDueDate;
+
+    /**
+     * Sum of all recorded payments. Kept on the sponsor (and updated by PaymentService) so lists, totals
+     * and the payment status filter do not need to load every payment. Null on rows created before payments existed.
+     */
+    @Column(name = "amount_paid", precision = 14, scale = 2)
+    private BigDecimal amountPaid;
+
+    @Column(name = "notes", length = 500)
+    private String notes;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id")
@@ -98,6 +120,14 @@ public class Sponsor {
         this.phone = phone;
     }
 
+    public String getIndustry() {
+        return industry;
+    }
+
+    public void setIndustry(String industry) {
+        this.industry = industry;
+    }
+
     public BigDecimal getSponsorshipAmount() {
         return sponsorshipAmount;
     }
@@ -114,11 +144,70 @@ public class Sponsor {
         this.sponsorshipStatus = sponsorshipStatus;
     }
 
+    public SponsorshipTier getTier() {
+        return tier;
+    }
+
+    public void setTier(SponsorshipTier tier) {
+        this.tier = tier;
+    }
+
+    public LocalDate getPaymentDueDate() {
+        return paymentDueDate;
+    }
+
+    public void setPaymentDueDate(LocalDate paymentDueDate) {
+        this.paymentDueDate = paymentDueDate;
+    }
+
+    /** Never null: rows without payments report zero. */
+    public BigDecimal getAmountPaid() {
+        return amountPaid == null ? BigDecimal.ZERO : amountPaid;
+    }
+
+    public void setAmountPaid(BigDecimal amountPaid) {
+        this.amountPaid = amountPaid;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
     public Event getEvent() {
         return event;
     }
 
     public void setEvent(Event event) {
         this.event = event;
+    }
+
+    /** Amount still to be received; zero when no amount is recorded or the sponsorship is cancelled. */
+    public BigDecimal getOutstandingAmount() {
+        if (sponsorshipAmount == null || sponsorshipStatus == SponsorshipStatus.CANCELLED) {
+            return BigDecimal.ZERO;
+        }
+        return sponsorshipAmount.subtract(getAmountPaid()).max(BigDecimal.ZERO);
+    }
+
+    public PaymentStatus getPaymentStatus() {
+        return paymentStatusOn(LocalDate.now());
+    }
+
+    public PaymentStatus paymentStatusOn(LocalDate today) {
+        return PaymentStatus.of(sponsorshipStatus, sponsorshipAmount, getAmountPaid(), paymentDueDate, today);
+    }
+
+    /** Percentage of the sponsorship amount already paid (0-100), for progress bars. */
+    public int getPaidPercent() {
+        if (sponsorshipAmount == null || sponsorshipAmount.signum() <= 0) {
+            return 0;
+        }
+        int percent = getAmountPaid().multiply(BigDecimal.valueOf(100))
+                .divide(sponsorshipAmount, 0, java.math.RoundingMode.DOWN).intValue();
+        return Math.min(100, percent);
     }
 }
