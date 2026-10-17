@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Sign in')}"></head>
+<body class="auth-body">
+
+<main class="auth">
+    <section class="auth-showcase" aria-hidden="true">
+        <a class="brand brand-light" th:href="@{/login}">
+            <span class="brand-mark">ES</span>
+            <span class="brand-text">Sponsorship<span>Tracker</span></span>
+        </a>
+        <div class="auth-showcase-copy">
+            <h2>Every event, sponsor and payment in one place.</h2>
+            <p>Track sponsorship packages, record payments, follow funding targets and catch problems early with
+                automatic alerts.</p>
+        </div>
+        <ul class="auth-points">
+            <li><svg th:replace="~{fragments/icons :: target}"></svg>Funding targets and progress per event</li>
+            <li><svg th:replace="~{fragments/icons :: wallet}"></svg>Payments, balances and overdue tracking</li>
+            <li><svg th:replace="~{fragments/icons :: chart}"></svg>Reports, CSV exports and an audit trail</li>
+        </ul>
+    </section>
+
+    <section class="auth-panel">
+        <div class="auth-card">
+            <div class="auth-card-head">
+                <span class="auth-icon"><svg th:replace="~{fragments/icons :: lock}"></svg></span>
+                <h1 class="page-title">Sign in</h1>
+                <p class="muted">Use your Sponsorship Tracker account to continue.</p>
+            </div>
+
+            <div class="banner banner-error" id="login-error" role="alert" th:if="${param.error != null}">
+                <svg th:replace="~{fragments/icons :: error}"></svg>
+                <span>Incorrect user name or password.</span>
+            </div>
+            <div class="banner banner-error" id="login-locked" role="alert" th:if="${param.locked != null}">
+                <svg th:replace="~{fragments/icons :: lock}"></svg>
+                <span>This account is temporarily locked after too many failed attempts. Try again in 15 minutes.</span>
+            </div>
+            <div class="banner banner-success" id="logout-message" role="status" th:if="${param.logout != null}">
+                <svg th:replace="~{fragments/icons :: check}"></svg>
+                <span>You have been signed out.</span>
+            </div>
+
+            <form class="auth-form" id="login-form" method="post" th:action="@{/login}">
+                <div class="field">
+                    <label class="label" for="username">User name</label>
+                    <div class="input-icon">
+                        <svg th:replace="~{fragments/icons :: user}"></svg>
+                        <input class="input" type="text" id="username" name="username" autocomplete="username"
+                               autocapitalize="none" spellcheck="false" required autofocus>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label" for="password">Password</label>
+                    <div class="input-icon">
+                        <svg th:replace="~{fragments/icons :: lock}"></svg>
+                        <input class="input" type="password" id="password" name="password"
+                               autocomplete="current-password" required>
+                        <button type="button" class="input-reveal" data-reveal="password"
+                                aria-label="Show password" aria-pressed="false">Show</button>
+                    </div>
+                </div>
+                <label class="checkbox">
+                    <input type="checkbox" name="remember-me" id="remember-me">
+                    <span>Keep me signed in for 14 days</span>
+                </label>
+                <button type="submit" class="btn btn-primary btn-block" id="login-button">Sign in</button>
+            </form>
+
+            <div class="auth-demo" id="demo-accounts" th:if="${demoAdmin != null}">
+                <p class="auth-demo-title"><svg th:replace="~{fragments/icons :: info}"></svg>Demo accounts (dev profile)</p>
+                <button type="button" class="auth-demo-row" th:data-fill-user="${demoAdmin}"
+                        th:data-fill-pass="${demoAdminPassword}">
+                    <span class="badge badge-confirmed">Admin</span>
+                    <code th:text="|${demoAdmin} / ${demoAdminPassword}|">admin / admin123</code>
+                </button>
+                <button type="button" class="auth-demo-row" th:if="${demoViewer != null}"
+                        th:data-fill-user="${demoViewer}" th:data-fill-pass="${demoViewerPassword}">
+                    <span class="badge badge-neutral">Viewer</span>
+                    <code th:text="|${demoViewer} / ${demoViewerPassword}|">viewer / viewer123</code>
+                </button>
+            </div>
+
+            <div class="auth-foot">
+                <button type="button" class="icon-btn theme-toggle" data-theme-toggle aria-label="Toggle dark mode"
+                        title="Toggle dark mode">
+                    <svg th:replace="~{fragments/icons :: sun}"></svg>
+                    <svg th:replace="~{fragments/icons :: moon}"></svg>
+                </button>
+                <span><svg th:replace="~{fragments/icons :: shield}"></svg>Admins can edit; viewers have read-only access.</span>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script th:src="@{/js/app.js}" defer></script>
+</body>
+</html>

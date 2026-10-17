@@ -36,6 +36,11 @@ services:
       DB_URL: jdbc:mysql://mysql:3306/eventsponsorship_db
       DB_USERNAME: ${DB_USERNAME:-eventtracker}
       DB_PASSWORD: ${DB_PASSWORD}
+      # Sign-in accounts: ADMIN can change data, VIEWER is read-only
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
+      VIEWER_USERNAME: ${VIEWER_USERNAME:-viewer}
+      VIEWER_PASSWORD: ${VIEWER_PASSWORD:-}
       # Seeds sample data only when the database has no events yet
       APP_DEMO_DATA: ${APP_DEMO_DATA:-true}
     ports:

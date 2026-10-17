@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -21,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -33,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@WithMockUser(username = "admin", roles = "ADMIN")
 class SponsorControllerTest {
 
     @Autowired
@@ -104,7 +107,7 @@ class SponsorControllerTest {
 
     @Test
     void submittingValidFormCreatesSponsorAndRedirects() throws Exception {
-        mockMvc.perform(post("/sponsors")
+        mockMvc.perform(post("/sponsors").with(csrf())
                         .param("name", "Acme Corp")
                         .param("contactPerson", "Jane Doe")
                         .param("email", "jane@acme.com")
@@ -124,7 +127,7 @@ class SponsorControllerTest {
 
     @Test
     void submittingInvalidFormShowsValidationErrors() throws Exception {
-        mockMvc.perform(post("/sponsors")
+        mockMvc.perform(post("/sponsors").with(csrf())
                         .param("name", " ")
                         .param("email", "bad-email")
                         .param("sponsorshipAmount", "abc")
@@ -142,7 +145,7 @@ class SponsorControllerTest {
 
     @Test
     void submittingUnknownEventShowsFieldError() throws Exception {
-        mockMvc.perform(post("/sponsors")
+        mockMvc.perform(post("/sponsors").with(csrf())
                         .param("name", "Acme Corp")
                         .param("sponsorshipStatus", "PROPOSED")
                         .param("eventId", "999999"))
@@ -162,7 +165,7 @@ class SponsorControllerTest {
                 .andExpect(content().string(containsString("Edit Sponsor")))
                 .andExpect(content().string(containsString("value=\"Acme Corp\"")));
 
-        mockMvc.perform(post("/sponsors/{id}", saved.getId())
+        mockMvc.perform(post("/sponsors/{id}", saved.getId()).with(csrf())
                         .param("name", "Acme Corporation")
                         .param("sponsorshipStatus", "COMPLETED")
                         .param("sponsorshipAmount", "30000")
@@ -179,7 +182,7 @@ class SponsorControllerTest {
     void invalidUpdateKeepsOriginalSponsor() throws Exception {
         Sponsor saved = sponsorRepository.save(sponsor("Acme Corp", SponsorshipStatus.PROPOSED, event));
 
-        mockMvc.perform(post("/sponsors/{id}", saved.getId())
+        mockMvc.perform(post("/sponsors/{id}", saved.getId()).with(csrf())
                         .param("name", "")
                         .param("sponsorshipStatus", "PROPOSED"))
                 .andExpect(status().isOk())

@@ -1,6 +1,6 @@
 /*
  * Event Sponsorship Tracker - small progressive enhancements. Every page works without JavaScript;
- * this only adds the theme switch, the mobile menu, confirmation dialogs and dismissible banners.
+ * this only adds the theme switch, menus, confirmation dialogs, banners and sign-in helpers.
  */
 (function () {
     "use strict";
@@ -32,23 +32,80 @@
         button.setAttribute("aria-pressed", String(currentTheme() === "dark"));
     });
 
-    // Mobile sidebar
+    // Mobile navigation: the section links fold into a drop-down on small screens
     var body = document.body;
-    document.querySelectorAll("[data-sidebar-toggle]").forEach(function (button) {
-        button.addEventListener("click", function () {
-            var open = body.classList.toggle("sidebar-open");
-            button.setAttribute("aria-expanded", String(open));
+    var navToggle = document.querySelector("[data-nav-toggle]");
+    function setNavOpen(open) {
+        body.classList.toggle("nav-open", open);
+        if (navToggle) {
+            navToggle.setAttribute("aria-expanded", String(open));
+            navToggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+        }
+    }
+    if (navToggle) {
+        navToggle.addEventListener("click", function () {
+            setNavOpen(!body.classList.contains("nav-open"));
+        });
+    }
+
+    // Drop-down menus (<details class="menu">): only one open at a time, closed by outside click or Escape
+    var menus = document.querySelectorAll("details.menu");
+    menus.forEach(function (menu) {
+        menu.addEventListener("toggle", function () {
+            if (menu.open) {
+                menus.forEach(function (other) {
+                    if (other !== menu) {
+                        other.open = false;
+                    }
+                });
+                setNavOpen(false);
+            }
         });
     });
-    document.querySelectorAll("[data-sidebar-close]").forEach(function (element) {
-        element.addEventListener("click", function () {
-            body.classList.remove("sidebar-open");
+    document.addEventListener("click", function (event) {
+        menus.forEach(function (menu) {
+            if (menu.open && !menu.contains(event.target)) {
+                menu.open = false;
+            }
         });
+        if (body.classList.contains("nav-open") && !event.target.closest(".appbar")) {
+            setNavOpen(false);
+        }
     });
     document.addEventListener("keydown", function (event) {
         if (event.key === "Escape") {
-            body.classList.remove("sidebar-open");
+            menus.forEach(function (menu) {
+                menu.open = false;
+            });
+            setNavOpen(false);
         }
+    });
+
+    // Sign-in page: show/hide the password and fill in a demo account
+    document.querySelectorAll("[data-reveal]").forEach(function (button) {
+        var field = document.getElementById(button.getAttribute("data-reveal"));
+        if (!field) {
+            return;
+        }
+        button.addEventListener("click", function () {
+            var show = field.type === "password";
+            field.type = show ? "text" : "password";
+            field.toggleAttribute("data-revealed", show);
+            button.textContent = show ? "Hide" : "Show";
+            button.setAttribute("aria-pressed", String(show));
+            button.setAttribute("aria-label", show ? "Hide password" : "Show password");
+        });
+    });
+    document.querySelectorAll("[data-fill-user]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            var user = document.getElementById("username");
+            var pass = document.getElementById("password");
+            if (user && pass) {
+                user.value = button.getAttribute("data-fill-user");
+                pass.value = button.getAttribute("data-fill-pass");
+                pass.focus();
+            }
+        });
     });
 
     // Dismissible banners

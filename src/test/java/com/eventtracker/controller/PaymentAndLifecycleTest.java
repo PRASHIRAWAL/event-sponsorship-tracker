@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -31,6 +32,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -48,6 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@WithMockUser(username = "admin", roles = "ADMIN")
 class PaymentAndLifecycleTest {
 
     @Autowired
@@ -96,7 +99,7 @@ class PaymentAndLifecycleTest {
 
     @Test
     void recordingAPaymentUpdatesTotalsStatusAndActivity() throws Exception {
-        mockMvc.perform(post("/sponsors/{id}/payments", acme.getId())
+        mockMvc.perform(post("/sponsors/{id}/payments", acme.getId()).with(csrf())
                         .param("amount", "4000")
                         .param("paymentDate", LocalDate.now().toString())
                         .param("method", "UPI")
@@ -124,7 +127,7 @@ class PaymentAndLifecycleTest {
 
     @Test
     void paymentLargerThanOutstandingBalanceIsRejectedOnTheForm() throws Exception {
-        mockMvc.perform(post("/sponsors/{id}/payments", acme.getId())
+        mockMvc.perform(post("/sponsors/{id}/payments", acme.getId()).with(csrf())
                         .param("amount", "10000.01")
                         .param("paymentDate", LocalDate.now().toString())
                         .param("method", "CASH"))
@@ -138,7 +141,7 @@ class PaymentAndLifecycleTest {
 
     @Test
     void futurePaymentDateIsRejected() throws Exception {
-        mockMvc.perform(post("/sponsors/{id}/payments", acme.getId())
+        mockMvc.perform(post("/sponsors/{id}/payments", acme.getId()).with(csrf())
                         .param("amount", "100")
                         .param("paymentDate", LocalDate.now().plusDays(1).toString())
                         .param("method", "CASH"))
@@ -179,7 +182,7 @@ class PaymentAndLifecycleTest {
         Long first = paymentService.record(acme.getId(), payment("3000")).getId();
         paymentService.record(acme.getId(), payment("2000"));
 
-        mockMvc.perform(post("/sponsors/{id}/payments/{pid}/delete", acme.getId(), first))
+        mockMvc.perform(post("/sponsors/{id}/payments/{pid}/delete", acme.getId(), first).with(csrf()))
                 .andExpect(redirectedUrl("/sponsors/" + acme.getId()));
 
         assertThat(sponsorRepository.findById(acme.getId()).orElseThrow().getAmountPaid()).isEqualByComparingTo("2000");
@@ -190,7 +193,7 @@ class PaymentAndLifecycleTest {
     void sponsorAmountCannotDropBelowWhatWasPaid() throws Exception {
         paymentService.record(acme.getId(), payment("6000"));
 
-        mockMvc.perform(post("/sponsors/{id}", acme.getId())
+        mockMvc.perform(post("/sponsors/{id}", acme.getId()).with(csrf())
                         .param("name", "Acme Corp")
                         .param("sponsorshipStatus", "CONFIRMED")
                         .param("sponsorshipAmount", "5000"))
@@ -209,7 +212,7 @@ class PaymentAndLifecycleTest {
     void deletingASponsorRemovesItsPayments() throws Exception {
         paymentService.record(acme.getId(), payment("1000"));
 
-        mockMvc.perform(post("/sponsors/{id}/delete", acme.getId()))
+        mockMvc.perform(post("/sponsors/{id}/delete", acme.getId()).with(csrf()))
                 .andExpect(redirectedUrl("/sponsors"))
                 .andExpect(flash().attribute("successMessage", "Sponsor \"Acme Corp\" deleted."));
 
@@ -221,7 +224,7 @@ class PaymentAndLifecycleTest {
 
     @Test
     void deletingAnEventKeepsItsSponsorsUnlinked() throws Exception {
-        mockMvc.perform(post("/events/{id}/delete", event.getId()))
+        mockMvc.perform(post("/events/{id}/delete", event.getId()).with(csrf()))
                 .andExpect(redirectedUrl("/events"))
                 .andExpect(flash().attribute("successMessage", containsString("1 sponsor(s) were kept")));
 

@@ -38,6 +38,10 @@ abstract class BaseE2ETest {
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
     private static final Path SCREENSHOT_DIR = Path.of("target", "e2e-screenshots");
     private static final AtomicInteger COUNTER = new AtomicInteger();
+    protected static final String ADMIN = "admin";
+    protected static final String ADMIN_PASSWORD = "admin-test-pass";
+    protected static final String VIEWER = "viewer";
+    protected static final String VIEWER_PASSWORD = "viewer-test-pass";
 
     @LocalServerPort
     private int port;
@@ -63,6 +67,27 @@ abstract class BaseE2ETest {
         options.addArguments("--window-size=1440,1000", "--disable-gpu", "--no-sandbox", "--disable-dev-shm-usage");
         driver = new ChromeDriver(options);
         wait = new WebDriverWait(driver, TIMEOUT);
+        if (signInAsAdmin()) {
+            signIn(ADMIN, ADMIN_PASSWORD);
+        }
+    }
+
+    /** Tests start signed in as the admin; override to start signed out. */
+    protected boolean signInAsAdmin() {
+        return true;
+    }
+
+    /** Signs in through the sign-in page (accounts come from the "test" profile) and waits for the dashboard. */
+    protected void signIn(String username, String password) {
+        submitLogin(username, password);
+        wait.until(ExpectedConditions.urlMatches("/dashboard$"));
+    }
+
+    protected void submitLogin(String username, String password) {
+        open("/login");
+        type(By.id("username"), username);
+        type(By.id("password"), password);
+        driver.findElement(By.id("login-button")).click();
     }
 
     @AfterEach

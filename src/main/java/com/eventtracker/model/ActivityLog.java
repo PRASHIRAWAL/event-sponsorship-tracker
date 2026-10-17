@@ -47,10 +47,19 @@ public class ActivityLog {
     @Column(name = "message", nullable = false, length = MAX_MESSAGE)
     private String message;
 
+    /** User name of whoever made the change ("system" for seeded data; null on entries from before sign-in). */
+    @Column(name = "actor", length = 50)
+    private String actor;
+
     public ActivityLog() {
     }
 
     public ActivityLog(ActivityType type, String subjectType, Long subjectId, String message) {
+        this(type, subjectType, subjectId, message, null);
+    }
+
+    public ActivityLog(ActivityType type, String subjectType, Long subjectId, String message, String actor) {
+        this.actor = actor;
         this.occurredAt = LocalDateTime.now();
         this.type = type;
         this.subjectType = subjectType;
@@ -80,6 +89,10 @@ public class ActivityLog {
 
     public String getMessage() {
         return message;
+    }
+
+    public String getActor() {
+        return actor;
     }
 
     /** Deleted subjects can no longer be opened, so the UI shows them without a link. */

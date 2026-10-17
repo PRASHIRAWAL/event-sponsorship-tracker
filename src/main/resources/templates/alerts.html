@@ -68,7 +68,9 @@
                 <div class="alert-card-action">
                     <a class="btn btn-sm btn-soft" th:if="${alert.subjectType() == 'EVENT'}"
                        th:href="@{/events/{id}(id=${alert.subjectId()})}">View Event</a>
-                    <a class="btn btn-sm btn-primary" th:if="${alert.subjectType() == 'SPONSOR'}"
+                    <a class="btn btn-sm btn-soft" th:if="${alert.subjectType() == 'SPONSOR'}" sec:authorize="!hasRole('ADMIN')"
+                       th:href="@{/sponsors/{id}(id=${alert.subjectId()})}">View Sponsor</a>
+                    <a class="btn btn-sm btn-primary" th:if="${alert.subjectType() == 'SPONSOR'}" sec:authorize="hasRole('ADMIN')"
                        th:href="${alert.rule().name() == 'SPONSOR_PAYMENT_OVERDUE'} ? @{/sponsors/{id}(id=${alert.subjectId()})} : @{/sponsors/{id}/edit(id=${alert.subjectId()})}"
                        th:text="${alert.rule().name() == 'SPONSOR_PAYMENT_OVERDUE'} ? 'Record Payment' : 'Fix Sponsor'">Fix Sponsor</a>
                 </div>

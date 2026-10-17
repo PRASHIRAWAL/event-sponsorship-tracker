@@ -14,7 +14,7 @@
         <div class="page-actions">
             <a class="btn btn-secondary" id="export-events" th:href="@{${pager.exportUrl('/events/export.csv')}}">
                 <svg th:replace="~{fragments/icons :: download}"></svg>Export CSV</a>
-            <a class="btn btn-primary" id="create-event" th:href="@{/events/new}">
+            <a class="btn btn-primary" id="create-event" th:href="@{/events/new}" sec:authorize="hasRole('ADMIN')">
                 <svg th:replace="~{fragments/icons :: plus}"></svg>Create Event</a>
         </div>
     </div>
@@ -42,8 +42,8 @@
         <div class="empty-state">
             <span class="empty-state-icon"><svg th:replace="~{fragments/icons :: calendar}"></svg></span>
             <th:block th:unless="${filtered}">
-                <p class="empty-state-title">No events yet. Click <strong>Create Event</strong> to add the first one.</p>
-                <a class="btn btn-primary" th:href="@{/events/new}">
+                <p class="empty-state-title">No events yet.</p>
+                <a class="btn btn-primary" th:href="@{/events/new}" sec:authorize="hasRole('ADMIN')">
                     <svg th:replace="~{fragments/icons :: plus}"></svg>Create Event</a>
             </th:block>
             <th:block th:if="${filtered}">
@@ -117,7 +117,7 @@
                         <div class="row-actions">
                             <a class="btn btn-sm btn-secondary" th:href="@{/events/{id}(id=${event.id})}">
                                 <svg th:replace="~{fragments/icons :: eye}"></svg>View</a>
-                            <a class="btn btn-sm btn-soft" th:href="@{/events/{id}/edit(id=${event.id})}">
+                            <a class="btn btn-sm btn-soft" th:href="@{/events/{id}/edit(id=${event.id})}" sec:authorize="hasRole('ADMIN')">
                                 <svg th:replace="~{fragments/icons :: edit}"></svg>Edit</a>
                         </div>
                     </td>

@@ -77,6 +77,7 @@
             </p>
             <p class="timeline-time">
                 <span th:text="${entry.type.label}">Created</span> ·
+                <th:block th:if="${entry.actor != null}"><span class="timeline-actor" th:text="${entry.actor}">admin</span> ·</th:block>
                 <time th:datetime="${entry.occurredAt}"
                       th:text="${#temporals.format(entry.occurredAt, 'dd MMM yyyy, HH:mm')}">17 Oct 2026, 10:24</time>
             </p>

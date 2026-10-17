@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -15,6 +16,7 @@ import java.time.LocalDate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -27,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@WithMockUser(username = "admin", roles = "ADMIN")
 class EventControllerTest {
 
     @Autowired
@@ -69,7 +72,7 @@ class EventControllerTest {
 
     @Test
     void submittingValidFormCreatesEventAndRedirects() throws Exception {
-        mockMvc.perform(post("/events")
+        mockMvc.perform(post("/events").with(csrf())
                         .param("name", "Tech Fest")
                         .param("eventDate", "2026-11-05")
                         .param("venue", "Main Auditorium")
@@ -88,7 +91,7 @@ class EventControllerTest {
 
     @Test
     void submittingEmptyFormShowsValidationErrors() throws Exception {
-        mockMvc.perform(post("/events")
+        mockMvc.perform(post("/events").with(csrf())
                         .param("name", "   ")
                         .param("eventDate", "")
                         .param("venue", ""))
@@ -104,7 +107,7 @@ class EventControllerTest {
 
     @Test
     void submittingInvalidDateShowsFriendlyMessage() throws Exception {
-        mockMvc.perform(post("/events")
+        mockMvc.perform(post("/events").with(csrf())
                         .param("name", "Tech Fest")
                         .param("eventDate", "not-a-date")
                         .param("venue", "Main Auditorium"))
@@ -131,7 +134,7 @@ class EventControllerTest {
     void submittingValidEditUpdatesEvent() throws Exception {
         Event saved = eventRepository.save(new Event("Tech Fest", LocalDate.of(2026, 11, 5), "Main Auditorium", null));
 
-        mockMvc.perform(post("/events/{id}", saved.getId())
+        mockMvc.perform(post("/events/{id}", saved.getId()).with(csrf())
                         .param("name", "Tech Fest 2026")
                         .param("eventDate", "2026-11-06")
                         .param("venue", "Seminar Hall")
@@ -148,7 +151,7 @@ class EventControllerTest {
     void submittingInvalidEditKeepsOriginalEvent() throws Exception {
         Event saved = eventRepository.save(new Event("Tech Fest", LocalDate.of(2026, 11, 5), "Main Auditorium", null));
 
-        mockMvc.perform(post("/events/{id}", saved.getId())
+        mockMvc.perform(post("/events/{id}", saved.getId()).with(csrf())
                         .param("name", "")
                         .param("eventDate", "2026-11-06")
                         .param("venue", "Seminar Hall"))

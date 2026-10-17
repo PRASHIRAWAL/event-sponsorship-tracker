@@ -14,7 +14,7 @@
         <div class="page-actions">
             <a class="btn btn-secondary" id="export-sponsors" th:href="@{${pager.exportUrl('/sponsors/export.csv')}}">
                 <svg th:replace="~{fragments/icons :: download}"></svg>Export CSV</a>
-            <a class="btn btn-primary" id="create-sponsor" th:href="@{/sponsors/new}">
+            <a class="btn btn-primary" id="create-sponsor" th:href="@{/sponsors/new}" sec:authorize="hasRole('ADMIN')">
                 <svg th:replace="~{fragments/icons :: plus}"></svg>Add Sponsor</a>
         </div>
     </div>
@@ -57,8 +57,8 @@
         <div class="empty-state">
             <span class="empty-state-icon"><svg th:replace="~{fragments/icons :: users}"></svg></span>
             <th:block th:unless="${filtered}">
-                <p class="empty-state-title">No sponsors yet. Click <strong>Add Sponsor</strong> to add the first one.</p>
-                <a class="btn btn-primary" th:href="@{/sponsors/new}">
+                <p class="empty-state-title">No sponsors yet.</p>
+                <a class="btn btn-primary" th:href="@{/sponsors/new}" sec:authorize="hasRole('ADMIN')">
                     <svg th:replace="~{fragments/icons :: plus}"></svg>Add Sponsor</a>
             </th:block>
             <th:block th:if="${filtered}">
@@ -146,7 +146,7 @@
                         <div class="row-actions">
                             <a class="btn btn-sm btn-secondary" th:href="@{/sponsors/{id}(id=${sponsor.id})}">
                                 <svg th:replace="~{fragments/icons :: eye}"></svg>View</a>
-                            <a class="btn btn-sm btn-soft" th:href="@{/sponsors/{id}/edit(id=${sponsor.id})}">
+                            <a class="btn btn-sm btn-soft" th:href="@{/sponsors/{id}/edit(id=${sponsor.id})}" sec:authorize="hasRole('ADMIN')">
                                 <svg th:replace="~{fragments/icons :: edit}"></svg>Edit</a>
                         </div>
                     </td>

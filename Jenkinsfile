@@ -5,7 +5,10 @@
 //
 // One-time Jenkins setup (see docs/JENKINS_SETUP.md and docs/DEPLOYMENT.md):
 //   Manage Jenkins > Tools: register a JDK named 'JDK21' and a Maven installation named 'Maven3'.
-//   Manage Jenkins > Credentials: add a 'Username with password' credential with ID 'eventtracker-db'.
+//   Manage Jenkins > Credentials: add 'Username with password' credentials with these IDs:
+//     eventtracker-db      MySQL user for the app
+//     eventtracker-admin   the app's admin sign-in (full access; also used by the smoke tests)
+//     eventtracker-viewer  the app's read-only viewer sign-in
 
 pipeline {
     agent any
@@ -147,7 +150,11 @@ pipeline {
                         usernamePassword(credentialsId: 'eventtracker-db',
                             usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD'),
                         usernamePassword(credentialsId: 'dockerhub-credentials',
-                            usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_TOKEN')
+                            usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_TOKEN'),
+                        usernamePassword(credentialsId: 'eventtracker-admin',
+                            usernameVariable: 'ADMIN_USERNAME', passwordVariable: 'ADMIN_PASSWORD'),
+                        usernamePassword(credentialsId: 'eventtracker-viewer',
+                            usernameVariable: 'VIEWER_USERNAME', passwordVariable: 'VIEWER_PASSWORD')
                     ]) {
                         script {
                             if (runStatus("docker network inspect ${env.DEPLOY_NETWORK}") != 0) {
@@ -176,10 +183,12 @@ pipeline {
                             runStatus("docker rm -f ${env.NGINX_CONTAINER}")
                             runStatus("docker rm -f ${env.APP_CONTAINER}")
 
-                            // Pass database credentials through environment variables.
+                            // Pass database and sign-in credentials through environment variables (never on the command line).
                             runCommand("docker run -d --name ${env.APP_CONTAINER} --network ${env.DEPLOY_NETWORK} " +
                                     "--restart unless-stopped -p ${env.APP_PORT}:8080 " +
-                                    "-e DB_URL -e DB_USERNAME -e DB_PASSWORD ${env.DOCKERHUB_IMAGE}:${env.BUILD_NUMBER}")
+                                    "-e DB_URL -e DB_USERNAME -e DB_PASSWORD " +
+                                    "-e ADMIN_USERNAME -e ADMIN_PASSWORD -e VIEWER_USERNAME -e VIEWER_PASSWORD " +
+                                    "${env.DOCKERHUB_IMAGE}:${env.BUILD_NUMBER}")
 
                             runCommand("docker run -d --name ${env.NGINX_CONTAINER} --network ${env.DEPLOY_NETWORK} " +
                                     "--restart unless-stopped -p ${env.NGINX_PORT}:80 ${env.DOCKERHUB_IMAGE}-nginx:${env.BUILD_NUMBER}")
@@ -197,10 +206,23 @@ pipeline {
                     def retry = '-fsS --retry 45 --retry-delay 2 --retry-all-errors'
                     runCommand("curl ${retry} -o health-app.json http://localhost:${env.APP_PORT}/actuator/health")
                     runCommand("curl ${retry} -o health-nginx.json http://localhost:${env.NGINX_PORT}/actuator/health")
-                    runCommand("curl -fsS -o dashboard-nginx.html http://localhost:${env.NGINX_PORT}/dashboard")
-                    // Smoke-test the other main pages and the reporting API through Nginx (curl -f fails on 4xx/5xx)
-                    ['events', 'sponsors', 'reports', 'alerts', 'activity', 'api/reports/events'].each { path ->
-                        runCommand("curl -fsS -o smoke-page.out http://localhost:${env.NGINX_PORT}/${path}")
+                    // The sign-in page is public; every other page needs an account
+                    runCommand("curl -fsS -o login-nginx.html http://localhost:${env.NGINX_PORT}/login")
+                    if (!readFile('login-nginx.html').contains('login-form')) {
+                        error 'Sign-in page was not served through Nginx'
+                    }
+                    withCredentials([usernamePassword(credentialsId: 'eventtracker-admin',
+                            usernameVariable: 'ADMIN_USERNAME', passwordVariable: 'ADMIN_PASSWORD')]) {
+                        // Smoke-test the main pages and the reporting API through Nginx, signed in with
+                        // HTTP Basic (curl -f fails on 4xx/5xx, so a wrong password also fails the build)
+                        ['dashboard', 'events', 'sponsors', 'reports', 'alerts', 'activity', 'api/reports/events'].each { path ->
+                            def output = path == 'dashboard' ? 'dashboard-nginx.html' : 'smoke-page.out'
+                            if (isUnix()) {
+                                sh "curl -fsS -u \"\$ADMIN_USERNAME:\$ADMIN_PASSWORD\" -o ${output} http://localhost:${env.NGINX_PORT}/${path}"
+                            } else {
+                                bat "curl -fsS -u \"%ADMIN_USERNAME%:%ADMIN_PASSWORD%\" -o ${output} http://localhost:${env.NGINX_PORT}/${path}"
+                            }
+                        }
                     }
                     ['health-app.json', 'health-nginx.json'].each { file ->
                         def body = readFile(file).trim()

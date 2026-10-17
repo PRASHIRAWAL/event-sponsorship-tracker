@@ -108,6 +108,17 @@ foreign keys). The account has no `DROP`, no `GRANT` and no access to other data
 The Jenkinsfile reads it with `withCredentials`. Docker receives the values through `-e DB_USERNAME -e DB_PASSWORD`
 (no value on the command line), and Jenkins masks the password in the console log.
 
+### 4. Add the sign-in credentials
+
+Add two more **Username with password** credentials the same way:
+
+| ID | Username | Password | Used for |
+|---|---|---|---|
+| `eventtracker-admin` | e.g. `admin` | a strong password | Admin account (full access); the Verify stage also signs in with it |
+| `eventtracker-viewer` | e.g. `viewer` | a strong password | Read-only account |
+
+They reach the container as `ADMIN_USERNAME` / `ADMIN_PASSWORD` and `VIEWER_USERNAME` / `VIEWER_PASSWORD`.
+
 ## Deploying
 
 1. Push the branch, then open the job in Jenkins.
@@ -199,6 +210,8 @@ removed with `docker image rm event-sponsorship-tracker:<N> eventtracker-nginx:<
 | Health stays `DOWN` / curl gives up after ~90 s | `eventtracker-mysql` stopped (`docker start eventtracker-mysql`), or see `docker logs eventtracker-app` |
 | `Access denied for user 'eventtracker'@'<host>'` in the app log | Account host does not match the source host; compare `<host>` with step 1 |
 | `Could not find credentials entry with ID 'eventtracker-db'` | Jenkins credential missing or ID misspelled |
+| `Could not find credentials entry with ID 'eventtracker-admin'` (or `-viewer`) | Add the sign-in credentials (step 4) |
+| Verify stage: `curl: (22) ... 401` | The `eventtracker-admin` password does not match the running container; redeploy |
 | Nginx returns `502 Bad Gateway` | App container not running or still starting; check `docker ps` and the app log |
 
 ## Security notes

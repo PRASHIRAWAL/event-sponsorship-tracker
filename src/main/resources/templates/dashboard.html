@@ -13,7 +13,7 @@
                 <h1 class="page-title">Dashboard</h1>
                 <p class="page-subtitle">Track your events, sponsors, payments and funding targets in one place.</p>
             </div>
-            <div class="page-actions">
+            <div class="page-actions" sec:authorize="hasRole('ADMIN')">
                 <a class="btn btn-glass" th:href="@{/sponsors/new}">
                     <svg th:replace="~{fragments/icons :: plus}"></svg>Add Sponsor</a>
                 <a class="btn btn-light" th:href="@{/events/new}">
@@ -192,7 +192,7 @@
             <div class="empty-state" th:if="${#lists.isEmpty(upcomingEvents)}">
                 <span class="empty-state-icon"><svg th:replace="~{fragments/icons :: calendar}"></svg></span>
                 <p class="empty-state-title">No upcoming events</p>
-                <a class="btn btn-primary btn-sm" th:href="@{/events/new}">
+                <a class="btn btn-primary btn-sm" th:href="@{/events/new}" sec:authorize="hasRole('ADMIN')">
                     <svg th:replace="~{fragments/icons :: plus}"></svg>Create Event</a>
             </div>
             <ul class="list funding-list" th:unless="${#lists.isEmpty(upcomingFunding)}">

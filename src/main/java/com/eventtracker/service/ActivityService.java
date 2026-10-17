@@ -3,6 +3,7 @@ package com.eventtracker.service;
 import com.eventtracker.model.ActivityLog;
 import com.eventtracker.model.ActivityType;
 import com.eventtracker.repository.ActivityLogRepository;
+import com.eventtracker.security.CurrentUser;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,10 +23,13 @@ public class ActivityService {
         this.repository = repository;
     }
 
-    /** Joins the caller's transaction, so a failed change never leaves a log entry behind. */
+    /**
+     * Records the change together with the signed-in user who made it.
+     * Joins the caller's transaction, so a failed change never leaves a log entry behind.
+     */
     @Transactional
     public void record(ActivityType type, String subjectType, Long subjectId, String message) {
-        repository.save(new ActivityLog(type, subjectType, subjectId, message));
+        repository.save(new ActivityLog(type, subjectType, subjectId, message, CurrentUser.name()));
     }
 
     public List<ActivityLog> recent(int limit) {

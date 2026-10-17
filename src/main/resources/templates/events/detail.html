@@ -39,6 +39,7 @@
         <div class="page-actions">
             <a class="btn btn-secondary" th:href="@{/events}">
                 <svg th:replace="~{fragments/icons :: arrowLeft}"></svg>Back</a>
+            <th:block sec:authorize="hasRole('ADMIN')">
             <a class="btn btn-primary" id="edit-event" th:href="@{/events/{id}/edit(id=${event.id})}">
                 <svg th:replace="~{fragments/icons :: edit}"></svg>Edit Event</a>
             <form class="inline-form" method="post" th:action="@{/events/{id}/delete(id=${event.id})}"
@@ -47,6 +48,7 @@
                 <button type="submit" class="btn btn-danger-soft" id="delete-event">
                     <svg th:replace="~{fragments/icons :: trash}"></svg>Delete</button>
             </form>
+            </th:block>
         </div>
     </section>
 
@@ -105,7 +107,9 @@
                     </div>
                 </th:block>
                 <p class="muted" th:unless="${funding.hasTarget()}">
-                    No sponsorship target is set. <a th:href="@{/events/{id}/edit(id=${event.id})}">Add a target</a>
+                    No sponsorship target is set.
+                    <a th:href="@{/events/{id}/edit(id=${event.id})}" sec:authorize="hasRole('ADMIN')">Add a target</a>
+                    <span sec:authorize="!hasRole('ADMIN')">An admin can add one</span>
                     to track progress and get an alert when the event is close and under-funded.</p>
                 <div class="gauge-figures">
                     <div class="gauge-figure">
@@ -148,7 +152,7 @@
                 <h2 class="section-title">Sponsors</h2>
                 <p class="card-subtitle">Committed sponsorship counts Confirmed and Completed sponsors.</p>
             </div>
-            <a class="btn btn-primary btn-sm" id="add-sponsor" th:href="@{/sponsors/new(eventId=${event.id})}">
+            <a class="btn btn-primary btn-sm" id="add-sponsor" th:href="@{/sponsors/new(eventId=${event.id})}" sec:authorize="hasRole('ADMIN')">
                 <svg th:replace="~{fragments/icons :: plus}"></svg>Add Sponsor</a>
         </div>
 
@@ -192,8 +196,10 @@
                     <td data-label="Status"><span th:replace="~{fragments/ui :: status(${sponsor.sponsorshipStatus})}"></span></td>
                     <td data-label="Payment"><span th:replace="~{fragments/ui :: payment(${sponsor.paymentStatus})}"></span></td>
                     <td class="col-actions">
-                        <a class="btn btn-sm btn-soft" th:href="@{/sponsors/{id}/edit(id=${sponsor.id})}">
+                        <a class="btn btn-sm btn-soft" th:href="@{/sponsors/{id}/edit(id=${sponsor.id})}" sec:authorize="hasRole('ADMIN')">
                             <svg th:replace="~{fragments/icons :: edit}"></svg>Edit</a>
+                        <a class="btn btn-sm btn-secondary" th:href="@{/sponsors/{id}(id=${sponsor.id})}" sec:authorize="!hasRole('ADMIN')">
+                            <svg th:replace="~{fragments/icons :: eye}"></svg>View</a>
                     </td>
                 </tr>
                 </tbody>

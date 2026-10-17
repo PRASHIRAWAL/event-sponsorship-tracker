@@ -72,7 +72,8 @@ Spring Boot Application (Port 8080)
 - **CSV export:** sponsors and event funding, respecting the current filters (formula-injection safe).
 - **Reports page:** event funding table with totals, tier donut chart, payments by method, top sponsors.
 - **Activity log:** audit trail of every create/update/delete/payment, shown on the dashboard, detail pages and `/activity`.
-- **Redesigned UI:** sidebar app shell, light/dark theme toggle, responsive tables, dashboard charts, keyboard shortcut `/` for search.
+- **Redesigned UI:** top navigation bar with quick-add and account menus, light/dark theme toggle, responsive tables, dashboard charts, keyboard shortcut `/` for search.
+- **Sign-in & roles (Spring Security):** sign-in page with "keep me signed in"; **Admin** can create, edit and delete, **Viewer** is read-only (edit controls are hidden and blocked with 403). Passwords are stored as BCrypt hashes, forms are CSRF-protected, an account is locked for 15 minutes after 5 wrong passwords, and the activity log records who made each change. The REST API accepts HTTP Basic.
 - **Demo data & dev profile:** `APP_DEMO_DATA=true` seeds realistic sample data into an empty database.
 
 ---
@@ -141,6 +142,16 @@ mvn spring-boot:run
 mvn spring-boot:run "-Dspring-boot.run.profiles=dev"
 ```
 
+#### Sign-in accounts
+| Variable | Purpose | Default |
+|---|---|---|
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | Full access | `admin` / *random password printed in the log at startup* |
+| `VIEWER_USERNAME` / `VIEWER_PASSWORD` | Read-only access | `viewer` / *disabled when no password is set* |
+| `REMEMBER_ME_KEY` | Signs "keep me signed in" cookies | random (cookies end on restart) |
+
+The `dev` profile uses **admin / admin123** and **viewer / viewer123** and shows them on the sign-in page.
+Never use these outside local development.
+
 ### Run the full stack with Docker Compose (MySQL + app + Nginx)
 ```powershell
 mvn -B package -DskipTests
@@ -150,8 +161,8 @@ docker compose up -d --build
 ```
 
 ### 4. Application Access URLs
-- **Web Interface:** [http://localhost:8080](http://localhost:8080)
-- **Health Check Endpoint:** [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
+- **Web Interface:** [http://localhost:8080](http://localhost:8080) (redirects to the sign-in page)
+- **Health Check Endpoint:** [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health) (public; details only when signed in)
 
 ### 5. Application Pages
 | Page | URL |
@@ -163,9 +174,13 @@ docker compose up -d --build
 | Sponsor details (payments, record payment, contact, notes, history, delete) | `/sponsors/{id}` |
 | Reports (event funding, tiers, payment methods, top sponsors) | `/reports` |
 | Alerts & exceptions (filter by severity) | `/alerts` |
-| Activity log | `/activity` |
+| Activity log (who changed what) | `/activity` |
+| Sign in | `/login` |
 
 ### 6. REST API
+All endpoints need an account: send HTTP Basic credentials (e.g. `curl -u admin:password http://localhost:8080/api/events`).
+`GET` works for every user; `POST`, `PUT` and `DELETE` need the admin account (otherwise 403). Missing or wrong credentials return 401.
+
 | Method | Endpoint | Purpose |
 |---|---|---|
 | GET / POST | `/api/events` | List or create events |
