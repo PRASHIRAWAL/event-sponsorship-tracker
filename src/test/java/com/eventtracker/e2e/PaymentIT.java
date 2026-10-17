@@ -2,6 +2,7 @@ package com.eventtracker.e2e;
 
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 
 import java.net.URI;
@@ -47,8 +48,11 @@ class PaymentIT extends BaseE2ETest {
         // Delete asks for confirmation in a dialog before submitting
         driver.findElement(By.id("delete-sponsor")).click();
         assertThat(waitFor(By.id("confirm-dialog")).getText()).contains("Delete sponsor \"" + sponsorName + "\"?");
+        WebElement previousMessage = driver.findElement(By.id("success-message"));
         driver.findElement(By.id("confirm-yes")).click();
 
+        // Wait for the sponsor page (and its "payment recorded" message) to be replaced by the list
+        wait.until(ExpectedConditions.stalenessOf(previousMessage));
         assertThat(waitFor(By.id("success-message")).getText()).contains("Sponsor \"" + sponsorName + "\" deleted.");
         assertThat(URI.create(driver.getCurrentUrl()).getPath().replaceFirst(";.*$", "")).isEqualTo("/sponsors");
     }

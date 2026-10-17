@@ -65,6 +65,8 @@ abstract class BaseE2ETest {
         }
         // Desktop width so the full navigation bar and table layout are shown.
         options.addArguments("--window-size=1440,1000", "--disable-gpu", "--no-sandbox", "--disable-dev-shm-usage");
+        // Turn off the UI animations (prefers-reduced-motion) so elements are not moving when clicked
+        options.addArguments("--force-prefers-reduced-motion");
         driver = new ChromeDriver(options);
         wait = new WebDriverWait(driver, TIMEOUT);
         if (signInAsAdmin()) {

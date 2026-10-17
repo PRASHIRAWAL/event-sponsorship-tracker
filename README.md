@@ -73,7 +73,8 @@ Spring Boot Application (Port 8080)
 - **Reports page:** event funding table with totals, tier donut chart, payments by method, top sponsors.
 - **Activity log:** audit trail of every create/update/delete/payment, shown on the dashboard, detail pages and `/activity`.
 - **Redesigned UI:** top navigation bar with quick-add and account menus, light/dark theme toggle, responsive tables, dashboard charts, keyboard shortcut `/` for search.
-- **Sign-in & roles (Spring Security):** sign-in page with "keep me signed in"; **Admin** can create, edit and delete, **Viewer** is read-only (edit controls are hidden and blocked with 403). Passwords are stored as BCrypt hashes, forms are CSRF-protected, an account is locked for 15 minutes after 5 wrong passwords, and the activity log records who made each change. The REST API accepts HTTP Basic.
+- **Motion:** animated sign-in page (drifting colour background, live-looking preview cards, rotating headline, floating-label fields); in the app, a soft ambient background, staggered page reveals, count-up dashboard figures, filling progress bars and charts, hover lift on cards and a personal greeting. Animations switch off for users who prefer reduced motion.
+- **Sign-in & roles (Spring Security):** sign-in page with "keep me signed in"; **Admin** can create, edit and delete and sees alerts, the activity log and individual payment records; **Viewer** gets a read-only view of the dashboard, events, sponsors (with payment status and progress) and reports (everything else is hidden and blocked with 403). Passwords are stored as BCrypt hashes, forms are CSRF-protected, an account is locked for 15 minutes after 5 wrong passwords, and the activity log records who made each change. The REST API accepts HTTP Basic.
 - **Demo data & dev profile:** `APP_DEMO_DATA=true` seeds realistic sample data into an empty database.
 
 ---

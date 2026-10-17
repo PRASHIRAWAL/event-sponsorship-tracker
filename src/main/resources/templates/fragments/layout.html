@@ -27,6 +27,12 @@
 </head>
 <body>
 <th:block th:fragment="footer">
+    <!-- Soft, slowly drifting colour glow behind every page (same style as the sign-in page) -->
+    <div class="ambient" aria-hidden="true">
+        <span class="ambient-orb orb-1"></span>
+        <span class="ambient-orb orb-2"></span>
+        <span class="ambient-orb orb-3"></span>
+    </div>
     <footer class="site-footer">
         <div class="site-footer-inner">
             <span>Event Sponsorship Tracker &middot; DevOps project &middot; Spring Boot, Docker, Jenkins &amp; Ansible</span>

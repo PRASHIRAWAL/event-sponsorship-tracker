@@ -168,6 +168,55 @@
         }, 900);
     });
 
+    // Figures already on the page count up from zero: <span data-count-up>545,000.00</span>, "76%" or "12"
+    document.querySelectorAll("[data-count-up]").forEach(function (element, index) {
+        var text = element.textContent.trim();
+        var match = text.match(/^([^0-9-]*)(-?[0-9][0-9,]*)(\.([0-9]+))?(.*)$/);
+        if (reduceMotion || !match) {
+            return;
+        }
+        var prefix = match[1];
+        var suffix = match[5];
+        var decimals = match[4] ? match[4].length : 0;
+        var target = Number((match[2] + (match[3] || "")).replace(/,/g, ""));
+        var grouped = match[2].indexOf(",") !== -1 || target >= 1000;
+        var format = function (value) {
+            var fixed = value.toFixed(decimals);
+            if (grouped) {
+                var parts = fixed.split(".");
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                fixed = parts.join(".");
+            }
+            return prefix + fixed + suffix;
+        };
+        var duration = 1400;
+        var startAt = null;
+        var step = function (time) {
+            if (startAt === null) {
+                startAt = time;
+            }
+            var progress = Math.min((time - startAt) / duration, 1);
+            element.textContent = progress < 1 ? format(target * (1 - Math.pow(1 - progress, 3))) : text;
+            if (progress < 1) {
+                requestAnimationFrame(step);
+            }
+        };
+        element.textContent = format(0);
+        setTimeout(function () {
+            requestAnimationFrame(step);
+        }, 200 + index * 60);
+    });
+
+    // Success messages fade away after a few seconds (errors stay until dismissed)
+    document.querySelectorAll(".page .banner-success").forEach(function (banner) {
+        setTimeout(function () {
+            banner.classList.add("is-leaving");
+            setTimeout(function () {
+                banner.remove();
+            }, 450);
+        }, 7000);
+    });
+
     // Floating cards drift slightly with the mouse (data-depth = how far)
     document.querySelectorAll("[data-parallax]").forEach(function (stage) {
         if (reduceMotion) {

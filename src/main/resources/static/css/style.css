@@ -4,7 +4,7 @@
    4. Page header & hero   5. Buttons   6. Cards, banners & empty states
    7. Toolbar & forms   8. Tables, pagination, avatars & date tiles   9. Badges & chips
    10. Dashboard & charts   11. Alerts   12. Detail pages   13. Activity timeline
-   14. Dialog   15. Error page   16. Responsive
+   14. Dialog   15. Error page   16. Motion & ambience   17. Responsive
    ========================================================================== */
 
 /* 1. Design tokens ------------------------------------------------------- */
@@ -169,6 +169,8 @@
 
 html {
     -webkit-text-size-adjust: 100%;
+    /* Keep anchors and focused fields clear of the sticky top bar */
+    scroll-padding-top: calc(var(--appbar-height) + 20px);
 }
 
 body {
@@ -3830,7 +3832,409 @@ a.list-item-title:hover {
     color: transparent;
 }
 
-/* 16. Responsive --------------------------------------------------------- */
+/* 16. Motion & ambience (portal pages) ------------------------------------ */
+/* Pages stack above the ambient glow layer */
+body:not(.auth-body) {
+    position: relative;
+    isolation: isolate;
+}
+
+.ambient {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.ambient-orb {
+    position: absolute;
+    width: 42vmax;
+    height: 42vmax;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: var(--orb-opacity, 0.16);
+    will-change: transform;
+}
+
+.orb-1 {
+    top: -18vmax;
+    left: -12vmax;
+    background: radial-gradient(circle, #6366f1, transparent 65%);
+    animation: drift-1 26s ease-in-out infinite alternate;
+}
+
+.orb-2 {
+    right: -16vmax;
+    bottom: -20vmax;
+    background: radial-gradient(circle, #14b8a6, transparent 65%);
+    animation: drift-2 30s ease-in-out infinite alternate;
+}
+
+.orb-3 {
+    top: 35%;
+    left: 45%;
+    width: 30vmax;
+    height: 30vmax;
+    background: radial-gradient(circle, #ec4899, transparent 65%);
+    opacity: calc(var(--orb-opacity, 0.16) * 0.6);
+    animation: drift-3 36s ease-in-out infinite alternate;
+}
+
+:root[data-theme="dark"] {
+    --orb-opacity: 0.22;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --orb-opacity: 0.22;
+    }
+}
+
+/* Cards are slightly see-through so the glow shows faintly behind them */
+.card {
+    background: color-mix(in srgb, var(--surface) 93%, transparent);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+
+/* Page sections rise in one after another. Opacity starts just above zero so browser tests
+   still treat the content as visible while it animates. */
+@keyframes rise-in {
+    from {
+        opacity: 0.01;
+        transform: translateY(16px);
+    }
+}
+
+.page > *,
+.kpi-grid > .kpi,
+.stat-grid > *,
+.grid-2 > *,
+.grid-3 > *,
+.grid-main-side > *,
+.data-table tbody tr,
+.list > .list-item,
+.timeline-item,
+.alert-card {
+    animation: rise-in 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.page > :nth-child(2) { animation-delay: 60ms; }
+.page > :nth-child(3) { animation-delay: 120ms; }
+.page > :nth-child(4) { animation-delay: 180ms; }
+.page > :nth-child(5) { animation-delay: 240ms; }
+.page > :nth-child(n + 6) { animation-delay: 300ms; }
+
+.kpi-grid > .kpi:nth-child(2),
+.stat-grid > :nth-child(2),
+.grid-2 > :nth-child(2),
+.grid-3 > :nth-child(2),
+.grid-main-side > :nth-child(2) { animation-delay: 160ms; }
+.kpi-grid > .kpi:nth-child(3),
+.stat-grid > :nth-child(3),
+.grid-3 > :nth-child(3) { animation-delay: 220ms; }
+.kpi-grid > .kpi:nth-child(4),
+.stat-grid > :nth-child(4) { animation-delay: 280ms; }
+.kpi-grid > .kpi:nth-child(5) { animation-delay: 340ms; }
+.kpi-grid > .kpi:nth-child(6) { animation-delay: 400ms; }
+.kpi-grid > .kpi:nth-child(7) { animation-delay: 460ms; }
+.kpi-grid > .kpi:nth-child(n + 8) { animation-delay: 520ms; }
+
+.data-table tbody tr:nth-child(1) { animation-delay: 200ms; }
+.data-table tbody tr:nth-child(2) { animation-delay: 240ms; }
+.data-table tbody tr:nth-child(3) { animation-delay: 280ms; }
+.data-table tbody tr:nth-child(4) { animation-delay: 320ms; }
+.data-table tbody tr:nth-child(5) { animation-delay: 360ms; }
+.data-table tbody tr:nth-child(6) { animation-delay: 400ms; }
+.data-table tbody tr:nth-child(7) { animation-delay: 440ms; }
+.data-table tbody tr:nth-child(8) { animation-delay: 480ms; }
+.data-table tbody tr:nth-child(n + 9) { animation-delay: 520ms; }
+
+.list > .list-item:nth-child(2),
+.timeline-item:nth-child(2),
+.alert-card:nth-child(2) { animation-delay: 300ms; }
+.list > .list-item:nth-child(3),
+.timeline-item:nth-child(3),
+.alert-card:nth-child(3) { animation-delay: 360ms; }
+.list > .list-item:nth-child(4),
+.timeline-item:nth-child(4),
+.alert-card:nth-child(4) { animation-delay: 420ms; }
+.list > .list-item:nth-child(n + 5),
+.timeline-item:nth-child(n + 5),
+.alert-card:nth-child(n + 5) { animation-delay: 480ms; }
+
+/* Progress and bar charts fill from the left; the donut spins into place */
+.progress-bar,
+.bar-fill {
+    transform-origin: left center;
+    animation: fill-x 1.2s 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+@keyframes fill-x {
+    from {
+        transform: scaleX(0);
+    }
+}
+
+/* A light sweep travels along filled bars now and then */
+.progress-bar {
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+    transform: translateX(-100%);
+    animation: bar-sweep 3.2s 1.8s ease-in-out infinite;
+}
+
+@keyframes bar-sweep {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    45%,
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.donut {
+    animation: donut-in 1s 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+@keyframes donut-in {
+    from {
+        opacity: 0.01;
+        transform: rotate(-120deg) scale(0.7);
+    }
+}
+
+/* Dashboard hero: greeting, drifting light and a gently shifting gradient */
+.hero {
+    background-size: 160% 160%, 160% 160%, 200% 200%;
+    animation: rise-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards, hero-shift 16s ease-in-out infinite alternate;
+}
+
+@keyframes hero-shift {
+    to {
+        background-position: 100% 0, 0 100%, 100% 50%;
+    }
+}
+
+.hero::before {
+    content: "";
+    position: absolute;
+    top: -40%;
+    left: -10%;
+    width: 50%;
+    height: 180%;
+    background: radial-gradient(closest-side, rgba(255, 255, 255, 0.16), transparent);
+    animation: hero-light 12s ease-in-out infinite alternate;
+    pointer-events: none;
+}
+
+@keyframes hero-light {
+    to {
+        transform: translateX(160%);
+    }
+}
+
+.hero-greeting {
+    margin-bottom: 4px;
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.hero-greeting strong {
+    color: #fff;
+}
+
+.hero-stat-value {
+    display: inline-block;
+}
+
+/* Cards lift and glow on hover; their icons give a little bounce */
+.card {
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.kpi:hover,
+.stat-grid > .card:hover {
+    transform: translateY(-3px);
+    border-color: var(--primary-border);
+    box-shadow: 0 18px 36px -18px rgba(79, 70, 229, 0.45);
+}
+
+.kpi:hover .kpi-icon,
+.stat-grid > .card:hover .icon {
+    animation: icon-bounce 0.6s ease;
+}
+
+@keyframes icon-bounce {
+    30% {
+        transform: translateY(-4px) rotate(-6deg);
+    }
+
+    60% {
+        transform: translateY(1px) rotate(3deg);
+    }
+}
+
+.kpi-alert .kpi-icon {
+    animation: alert-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes alert-pulse {
+    50% {
+        box-shadow: 0 0 0 7px rgba(245, 158, 11, 0.15);
+    }
+}
+
+.list-item {
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.list > .list-item:hover {
+    transform: translateX(3px);
+}
+
+.data-table tbody tr {
+    transition: background 0.15s ease;
+}
+
+/* Primary buttons get the same light sweep as the sign-in button */
+.btn-primary {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -70%;
+    width: 45%;
+    height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+    transform: skewX(-20deg);
+    transition: left 0.6s ease;
+    pointer-events: none;
+}
+
+.btn-primary:hover::after {
+    left: 130%;
+}
+
+.btn .icon {
+    transition: transform 0.2s ease;
+}
+
+.btn:hover .icon {
+    transform: scale(1.12);
+}
+
+/* Top bar: the current-page underline grows in, the alert badge pulses, the logo shimmers */
+.nav a.active::after {
+    animation: underline-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+@keyframes underline-in {
+    from {
+        transform: scaleX(0);
+    }
+}
+
+.nav-badge {
+    animation: badge-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 0 5px rgba(239, 68, 68, 0);
+    }
+}
+
+.brand-mark {
+    background-size: 200% 200%;
+    animation: logo-shift 6s ease-in-out infinite alternate;
+}
+
+.brand:hover .brand-mark {
+    transform: rotate(-8deg) scale(1.06);
+}
+
+.brand-mark {
+    transition: transform 0.3s cubic-bezier(0.3, 1.5, 0.6, 1);
+}
+
+@keyframes logo-shift {
+    to {
+        background-position: 100% 100%;
+    }
+}
+
+.user-avatar {
+    transition: transform 0.3s cubic-bezier(0.3, 1.5, 0.6, 1);
+}
+
+.user-chip:hover .user-avatar {
+    transform: scale(1.08) rotate(6deg);
+}
+
+/* Flash messages slide in and fade away after a few seconds */
+.banner-success {
+    animation: slide-in 0.4s ease-out, banner-glow 1.6s 0.4s ease-out;
+}
+
+@keyframes banner-glow {
+    from {
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.25);
+    }
+}
+
+.banner.is-leaving {
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+/* Viewer layouts without the admin-only panels */
+.grid-main-side.is-single {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.grid-3.is-two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#payments-restricted {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#payments-restricted .icon {
+    width: 16px;
+    height: 16px;
+}
+
+@media (max-width: 960px) {
+    .grid-3.is-two {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* 17. Responsive --------------------------------------------------------- */
 @media (max-width: 1180px) {
     .kpi-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));

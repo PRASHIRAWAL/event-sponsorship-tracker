@@ -2,6 +2,8 @@ package com.eventtracker.security;
 
 import com.eventtracker.model.ActivityLog;
 import com.eventtracker.model.Event;
+import com.eventtracker.model.Sponsor;
+import com.eventtracker.model.SponsorshipStatus;
 import com.eventtracker.repository.ActivityLogRepository;
 import com.eventtracker.repository.EventRepository;
 import com.eventtracker.repository.PaymentRepository;
@@ -16,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -172,7 +175,7 @@ class SecurityTest {
         Event event = eventRepository.save(new Event("Tech Fest", LocalDate.of(2099, 11, 5), "Main Hall", null));
 
         for (String path : List.of("/dashboard", "/events", "/events/" + event.getId(), "/sponsors", "/reports",
-                "/alerts", "/activity", "/events/export.csv", "/sponsors/export.csv")) {
+                "/events/export.csv", "/sponsors/export.csv", "/api/events", "/api/reports/events")) {
             mockMvc.perform(get(path).with(httpBasic(VIEWER, VIEWER_PASSWORD)))
                     .andExpect(status().isOk());
         }
@@ -195,6 +198,40 @@ class SecurityTest {
                 .andExpect(status().isForbidden());
 
         assertThat(eventRepository.existsById(event.getId())).isTrue();
+    }
+
+    @Test
+    void viewerCannotSeeAlertsActivityOrPaymentRecords() throws Exception {
+        Event event = eventRepository.save(new Event("Tech Fest", LocalDate.of(2099, 11, 5), "Main Hall", null));
+        Sponsor sponsor = new Sponsor("Acme Corp", SponsorshipStatus.CONFIRMED);
+        sponsor.setEvent(event);
+        sponsor.setSponsorshipAmount(new BigDecimal("10000"));
+        sponsor = sponsorRepository.save(sponsor);
+
+        for (String path : List.of("/alerts", "/activity", "/api/activity", "/api/dashboard/exceptions",
+                "/api/sponsors/" + sponsor.getId() + "/payments")) {
+            mockMvc.perform(get(path).with(httpBasic(VIEWER, VIEWER_PASSWORD)))
+                    .andExpect(status().isForbidden());
+            mockMvc.perform(get(path).with(httpBasic(ADMIN, ADMIN_PASSWORD)))
+                    .andExpect(status().isOk());
+        }
+
+        mockMvc.perform(get("/dashboard").with(httpBasic(VIEWER, VIEWER_PASSWORD)))
+                .andExpect(content().string(not(containsString("href=\"/alerts\""))))
+                .andExpect(content().string(not(containsString("href=\"/activity\""))))
+                .andExpect(content().string(not(containsString("id=\"attention-panel\""))))
+                .andExpect(content().string(not(containsString("id=\"activity-panel\""))))
+                .andExpect(content().string(containsString("id=\"target-card\"")));
+        mockMvc.perform(get("/sponsors/{id}", sponsor.getId()).with(httpBasic(VIEWER, VIEWER_PASSWORD)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"payments-restricted\"")))
+                .andExpect(content().string(not(containsString("id=\"record-payment\""))));
+        mockMvc.perform(get("/reports").with(httpBasic(VIEWER, VIEWER_PASSWORD)))
+                .andExpect(content().string(not(containsString("id=\"payment-methods\""))));
+
+        mockMvc.perform(get("/dashboard").with(httpBasic(ADMIN, ADMIN_PASSWORD)))
+                .andExpect(content().string(containsString("id=\"attention-panel\"")))
+                .andExpect(content().string(not(containsString("id=\"target-card\""))));
     }
 
     @Test
@@ -247,7 +284,7 @@ class SecurityTest {
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getActor()).isEqualTo(ADMIN);
 
-        mockMvc.perform(get("/activity").with(httpBasic(VIEWER, VIEWER_PASSWORD)))
+        mockMvc.perform(get("/activity").with(httpBasic(ADMIN, ADMIN_PASSWORD)))
                 .andExpect(content().string(containsString("class=\"timeline-actor\">admin<")));
     }
 }

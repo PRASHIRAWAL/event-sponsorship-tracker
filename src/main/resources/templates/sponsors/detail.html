@@ -102,11 +102,14 @@
                              th:classappend="${sponsor.paidPercent >= 100} ? 'is-complete'"></div>
                     </div>
                 </div>
-                <div class="empty-state" th:if="${#lists.isEmpty(payments)}">
+                <p class="empty-inline" id="payments-restricted" sec:authorize="!hasRole('ADMIN')">
+                    <svg th:replace="~{fragments/icons :: lock}"></svg>
+                    Individual payment records are only visible to admins.</p>
+                <div class="empty-state" th:if="${#lists.isEmpty(payments)}" sec:authorize="hasRole('ADMIN')">
                     <span class="empty-state-icon"><svg th:replace="~{fragments/icons :: wallet}"></svg></span>
                     <p class="empty-state-title">No payments recorded yet.</p>
                 </div>
-                <div class="table-wrapper" th:unless="${#lists.isEmpty(payments)}">
+                <div class="table-wrapper" th:unless="${#lists.isEmpty(payments)}" sec:authorize="hasRole('ADMIN')">
                     <table class="data-table responsive" id="payments-table">
                         <thead>
                         <tr>
@@ -236,7 +239,7 @@
                 </div>
             </section>
 
-            <section class="card" th:unless="${#lists.isEmpty(activity)}">
+            <section class="card" th:unless="${#lists.isEmpty(activity)}" sec:authorize="hasRole('ADMIN')">
                 <div class="card-header">
                     <h2 class="section-title">History</h2>
                 </div>

@@ -52,6 +52,8 @@ class LoginIT extends BaseE2ETest {
         assertThat(pageTitle()).isEqualTo("Events");
         assertThat(driver.findElements(By.id("create-event"))).isEmpty();
         assertThat(driver.findElements(By.id("quick-add"))).isEmpty();
+        assertThat(driver.findElements(By.cssSelector("nav.nav a[href='/alerts']"))).isEmpty();
+        assertThat(driver.findElements(By.cssSelector("nav.nav a[href='/activity']"))).isEmpty();
 
         open("/events/new");
         assertThat(waitFor(By.id("access-denied")).getText()).contains("read-only access");

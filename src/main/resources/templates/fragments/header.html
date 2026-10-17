@@ -26,12 +26,12 @@
             <a th:href="@{/reports}" th:classappend="${active == 'reports'} ? 'active'"
                th:aria-current="${active == 'reports'} ? 'page'">
                 <svg th:replace="~{fragments/icons :: chart}"></svg>Reports</a>
-            <a th:href="@{/alerts}" th:classappend="${active == 'alerts'} ? 'active'"
+            <a th:href="@{/alerts}" th:classappend="${active == 'alerts'} ? 'active'" sec:authorize="hasRole('ADMIN')"
                th:aria-current="${active == 'alerts'} ? 'page'">
                 <svg th:replace="~{fragments/icons :: alert}"></svg>Alerts
                 <span class="nav-badge" th:if="${navAlertCount != null and navAlertCount > 0}"
                       th:text="${navAlertCount}" th:title="|${navAlertCount} open alerts|">3</span></a>
-            <a th:href="@{/activity}" th:classappend="${active == 'activity'} ? 'active'"
+            <a th:href="@{/activity}" th:classappend="${active == 'activity'} ? 'active'" sec:authorize="hasRole('ADMIN')"
                th:aria-current="${active == 'activity'} ? 'page'">
                 <svg th:replace="~{fragments/icons :: activity}"></svg>Activity</a>
         </nav>

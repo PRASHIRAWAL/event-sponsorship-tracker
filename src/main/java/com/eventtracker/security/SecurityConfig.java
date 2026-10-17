@@ -28,7 +28,8 @@ import java.util.Map;
  * Who may do what:
  * <ul>
  *   <li>Sign-in page, static files and the health/info endpoints are public (Docker and Jenkins checks).</li>
- *   <li>Any signed-in user (VIEWER or ADMIN) can read every page, export and GET endpoint.</li>
+ *   <li>Any signed-in user (VIEWER or ADMIN) can read the dashboard, events, sponsors, reports and exports.</li>
+ *   <li>Only ADMIN can see alerts, the activity log and individual payment records.</li>
  *   <li>Only ADMIN can open the create/edit forms and send POST, PUT or DELETE requests.</li>
  * </ul>
  * Browsers sign in with a form (session cookie, optional "remember me"); scripts and Jenkins use
@@ -51,6 +52,9 @@ public class SecurityConfig {
                                 "/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers(HttpMethod.GET, "/events/new", "/events/*/edit",
                                 "/sponsors/new", "/sponsors/*/edit").hasRole(Roles.ADMIN)
+                        // Operational detail (alerts, the audit trail and individual payment records) is for admins
+                        .requestMatchers("/alerts", "/activity", "/api/activity", "/api/dashboard/exceptions",
+                                "/api/sponsors/*/payments", "/api/payments/**").hasRole(Roles.ADMIN)
                         .requestMatchers(HttpMethod.GET, "/**").authenticated()
                         .requestMatchers(HttpMethod.HEAD, "/**").authenticated()
                         .anyRequest().hasRole(Roles.ADMIN))

@@ -207,7 +207,7 @@
         </div>
     </section>
 
-    <section class="card" th:unless="${#lists.isEmpty(activity)}">
+    <section class="card" th:unless="${#lists.isEmpty(activity)}" sec:authorize="hasRole('ADMIN')">
         <div class="card-header">
             <h2 class="section-title">History</h2>
         </div>

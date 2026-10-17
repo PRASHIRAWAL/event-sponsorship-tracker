@@ -9,7 +9,10 @@
     <section class="hero">
         <div class="hero-top">
             <div>
-                <p class="eyebrow">Overview</p>
+                <p class="hero-greeting" th:with="hour=${#temporals.hour(#temporals.createNow())}">
+                    <span th:text="${hour < 12} ? 'Good morning' : (${hour < 17} ? 'Good afternoon' : 'Good evening')">Good evening</span>,
+                    <strong sec:authentication="name">admin</strong> <span class="wave" aria-hidden="true">👋</span>
+                </p>
                 <h1 class="page-title">Dashboard</h1>
                 <p class="page-subtitle">Track your events, sponsors, payments and funding targets in one place.</p>
             </div>
@@ -31,15 +34,15 @@
         </form>
         <div class="hero-stats">
             <div>
-                <span class="hero-stat-value" th:text="|${summary.collectionRate()}%|">0%</span>
+                <span class="hero-stat-value" data-count-up th:text="|${summary.collectionRate()}%|">0%</span>
                 <span class="hero-stat-label">of committed funds collected</span>
             </div>
             <div th:if="${summary.totalTarget().signum() > 0}">
-                <span class="hero-stat-value" th:text="|${summary.targetProgress()}%|">0%</span>
+                <span class="hero-stat-value" data-count-up th:text="|${summary.targetProgress()}%|">0%</span>
                 <span class="hero-stat-label">of upcoming targets committed</span>
             </div>
-            <div>
-                <span class="hero-stat-value" th:text="${summary.overduePayments()}">0</span>
+            <div sec:authorize="hasRole('ADMIN')">
+                <span class="hero-stat-value" data-count-up th:text="${summary.overduePayments()}">0</span>
                 <span class="hero-stat-label">overdue payments</span>
             </div>
         </div>
@@ -100,7 +103,7 @@
                 <span class="kpi-label">Total Events</span>
                 <span class="kpi-icon"><svg th:replace="~{fragments/icons :: calendar}"></svg></span>
             </div>
-            <span class="kpi-value" id="total-events" th:text="${summary.totalEvents()}">0</span>
+            <span class="kpi-value" data-count-up id="total-events" th:text="${summary.totalEvents()}">0</span>
             <span class="kpi-note">All recorded events</span>
         </a>
         <a class="card kpi" th:href="@{/events(status='UPCOMING')}">
@@ -108,7 +111,7 @@
                 <span class="kpi-label">Upcoming Events</span>
                 <span class="kpi-icon kpi-icon-success"><svg th:replace="~{fragments/icons :: clock}"></svg></span>
             </div>
-            <span class="kpi-value" id="upcoming-events" th:text="${summary.upcomingEvents()}">0</span>
+            <span class="kpi-value" data-count-up id="upcoming-events" th:text="${summary.upcomingEvents()}">0</span>
             <span class="kpi-note">Today or later</span>
         </a>
         <a class="card kpi" th:href="@{/events(status='PAST')}">
@@ -116,7 +119,7 @@
                 <span class="kpi-label">Past Events</span>
                 <span class="kpi-icon kpi-icon-neutral"><svg th:replace="~{fragments/icons :: history}"></svg></span>
             </div>
-            <span class="kpi-value" id="past-events" th:text="${summary.pastEvents()}">0</span>
+            <span class="kpi-value" data-count-up id="past-events" th:text="${summary.pastEvents()}">0</span>
             <span class="kpi-note">Already held</span>
         </a>
         <a class="card kpi" th:href="@{/sponsors}">
@@ -124,7 +127,7 @@
                 <span class="kpi-label">Total Sponsors</span>
                 <span class="kpi-icon kpi-icon-violet"><svg th:replace="~{fragments/icons :: users}"></svg></span>
             </div>
-            <span class="kpi-value" id="total-sponsors" th:text="${summary.totalSponsors()}">0</span>
+            <span class="kpi-value" data-count-up id="total-sponsors" th:text="${summary.totalSponsors()}">0</span>
             <span class="kpi-note">Across all statuses</span>
         </a>
         <a class="card kpi kpi-wide" th:href="@{/sponsors(status='CONFIRMED')}">
@@ -132,7 +135,7 @@
                 <span class="kpi-label">Committed Amount</span>
                 <span class="kpi-icon kpi-icon-success"><svg th:replace="~{fragments/icons :: wallet}"></svg></span>
             </div>
-            <span class="kpi-value" id="committed-amount"
+            <span class="kpi-value" data-count-up id="committed-amount"
                   th:text="${#numbers.formatDecimal(summary.committedAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</span>
             <span class="kpi-note">Confirmed + Completed</span>
         </a>
@@ -141,7 +144,7 @@
                 <span class="kpi-label">Collected</span>
                 <span class="kpi-icon kpi-icon-info"><svg th:replace="~{fragments/icons :: check}"></svg></span>
             </div>
-            <span class="kpi-value" id="collected-amount"
+            <span class="kpi-value" data-count-up id="collected-amount"
                   th:text="${#numbers.formatDecimal(summary.collectedAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</span>
             <div class="progress" role="progressbar" aria-label="Share of committed funds collected"
                  aria-valuemin="0" aria-valuemax="100" th:aria-valuenow="${summary.collectionRate()}">
@@ -155,18 +158,31 @@
                 <span class="kpi-label">Open Pipeline</span>
                 <span class="kpi-icon"><svg th:replace="~{fragments/icons :: trend}"></svg></span>
             </div>
-            <span class="kpi-value" id="open-amount"
+            <span class="kpi-value" data-count-up id="open-amount"
                   th:text="${#numbers.formatDecimal(summary.openAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</span>
             <span class="kpi-note">Proposed + Pending</span>
         </a>
-        <a class="card kpi kpi-wide" th:href="@{/alerts}" th:classappend="${summary.alertCount() > 0} ? 'kpi-alert'">
+        <a class="card kpi kpi-wide" th:href="@{/events(status='UPCOMING')}" id="target-card" sec:authorize="!hasRole('ADMIN')">
+            <div class="kpi-top">
+                <span class="kpi-label">Upcoming Targets</span>
+                <span class="kpi-icon kpi-icon-violet"><svg th:replace="~{fragments/icons :: target}"></svg></span>
+            </div>
+            <span class="kpi-value" data-count-up
+                  th:text="${#numbers.formatDecimal(summary.totalTarget(), 1, 'COMMA', 2, 'POINT')}">0.00</span>
+            <div class="progress" role="progressbar" aria-label="Share of upcoming targets committed"
+                 aria-valuemin="0" aria-valuemax="100" th:aria-valuenow="${summary.targetProgress()}">
+                <div class="progress-bar" th:style="|width: ${summary.targetProgress()}%|"></div>
+            </div>
+            <span class="kpi-note" th:text="|${summary.targetProgress()}% already committed|">0% committed</span>
+        </a>
+        <a class="card kpi kpi-wide" th:href="@{/alerts}" sec:authorize="hasRole('ADMIN')" th:classappend="${summary.alertCount() > 0} ? 'kpi-alert'">
             <div class="kpi-top">
                 <span class="kpi-label">Open Alerts</span>
                 <span class="kpi-icon"
                       th:classappend="${summary.alertCount() > 0} ? 'kpi-icon-warning' : 'kpi-icon-success'">
                     <svg th:replace="~{fragments/icons :: alert}"></svg></span>
             </div>
-            <span class="kpi-value" id="alert-count" th:text="${summary.alertCount()}">0</span>
+            <span class="kpi-value" data-count-up id="alert-count" th:text="${summary.alertCount()}">0</span>
             <span class="kpi-note" th:text="${summary.alertCount() > 0} ? 'Items need attention' : 'Everything looks good'">
                 Everything looks good</span>
         </a>
@@ -180,7 +196,7 @@
     </p>
 
     <!-- Funding progress of upcoming events + items needing attention -->
-    <div class="grid-main-side">
+    <div class="grid-main-side" th:classappend="${#authorization.expression('!hasRole(''ADMIN'')')} ? 'is-single'">
         <section class="card" id="upcoming-panel">
             <div class="card-header">
                 <div>
@@ -232,7 +248,7 @@
             </ul>
         </section>
 
-        <section class="card" id="attention-panel">
+        <section class="card" id="attention-panel" sec:authorize="hasRole('ADMIN')">
             <div class="card-header">
                 <div>
                     <h2 class="section-title">Needs Attention</h2>
@@ -261,7 +277,7 @@
     </div>
 
     <!-- Status breakdown + tiers + recent activity -->
-    <div class="grid-3">
+    <div class="grid-3" th:classappend="${#authorization.expression('!hasRole(''ADMIN'')')} ? 'is-two'">
         <section class="card table-card">
             <div class="card-header">
                 <div>
@@ -327,7 +343,7 @@
             </div>
         </section>
 
-        <section class="card" id="activity-panel">
+        <section class="card" id="activity-panel" sec:authorize="hasRole('ADMIN')">
             <div class="card-header">
                 <div>
                     <h2 class="section-title">Recent Activity</h2>

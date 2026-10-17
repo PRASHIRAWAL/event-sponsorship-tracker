@@ -134,7 +134,7 @@
         </div>
     </section>
 
-    <div class="grid-3">
+    <div class="grid-3" th:classappend="${#authorization.expression('!hasRole(''ADMIN'')')} ? 'is-two'">
         <section class="card">
             <div class="card-header">
                 <div>
@@ -160,7 +160,7 @@
             </div>
         </section>
 
-        <section class="card">
+        <section class="card" id="payment-methods" sec:authorize="hasRole('ADMIN')">
             <div class="card-header">
                 <div>
                     <h2 class="section-title">Payments by method</h2>

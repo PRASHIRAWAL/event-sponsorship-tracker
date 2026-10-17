@@ -2,6 +2,8 @@ package com.eventtracker.e2e;
 
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 
 import java.net.URI;
 import java.time.LocalDate;
@@ -56,7 +58,9 @@ class EventIT extends BaseE2ETest {
         createEvent(other, "Lab 2", LocalDate.now().plusMonths(3));
 
         type(By.cssSelector("#event-search input[name='q']"), token);
+        WebElement unfilteredTable = driver.findElement(By.id("events-table"));
         driver.findElement(By.cssSelector("#event-search button[type='submit']")).click();
+        wait.until(ExpectedConditions.stalenessOf(unfilteredTable));
 
         String table = waitFor(By.id("events-table")).getText();
         assertThat(table).contains(matching).doesNotContain(other);
