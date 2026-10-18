@@ -1,0 +1,69 @@
+TASK 14 - v2 DEPLOYMENT (image tag 13)
+Sun Oct 18 04:28:50 UTC 2026
+
+=== CONTAINER ===
+NAMES        IMAGE                                      STATUS
+task14-app   prashirawal/event-sponsorship-tracker:13   Up About a minute
+
+=== HEALTH ===
+{"status":"UP"}
+
+=== PLAYBOOK RUNS (1: deploy v2, 2: idempotency check) ===
+﻿===== RUN 1 =====
+TASK [Verify Docker CLI access] ************************************************
+ok: [localhost]
+TASK [Inspect isolated network] ************************************************
+ok: [localhost]
+TASK [Check test database container state] *************************************
+ok: [localhost]
+TASK [Start test database only when stopped] ***********************************
+changed: [localhost]
+TASK [Inspect application container] *******************************************
+ok: [localhost]
+TASK [Check application container state] ***************************************
+ok: [localhost]
+TASK [Remove application container if image differs] ***************************
+changed: [localhost]
+TASK [Deploy application if missing or image differs] **************************
+changed: [localhost]
+TASK [Recover stopped application container] ***********************************
+skipping: [localhost]
+TASK [Wait for application health endpoint] ************************************
+ok: [localhost]
+TASK [Display health result] ***************************************************
+ok: [localhost] => {
+    "msg": "Application health: UP"
+TASK [Explain how to sign in when no admin password was given] *****************
+ok: [localhost] => {
+    "msg": "ADMIN_PASSWORD was not set; run 'docker logs task14-app' to find the generated admin password."
+PLAY RECAP *********************************************************************
+localhost                  : ok=11   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+===== RUN 2 =====
+TASK [Verify Docker CLI access] ************************************************
+ok: [localhost]
+TASK [Inspect isolated network] ************************************************
+ok: [localhost]
+TASK [Check test database container state] *************************************
+ok: [localhost]
+TASK [Start test database only when stopped] ***********************************
+skipping: [localhost]
+TASK [Inspect application container] *******************************************
+ok: [localhost]
+TASK [Check application container state] ***************************************
+ok: [localhost]
+TASK [Remove application container if image differs] ***************************
+skipping: [localhost]
+TASK [Deploy application if missing or image differs] **************************
+skipping: [localhost]
+TASK [Recover stopped application container] ***********************************
+skipping: [localhost]
+TASK [Wait for application health endpoint] ************************************
+ok: [localhost]
+TASK [Display health result] ***************************************************
+ok: [localhost] => {
+    "msg": "Application health: UP"
+TASK [Explain how to sign in when no admin password was given] *****************
+ok: [localhost] => {
+    "msg": "ADMIN_PASSWORD was not set; run 'docker logs task14-app' to find the generated admin password."
+PLAY RECAP *********************************************************************
+localhost                  : ok=8    changed=0    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
