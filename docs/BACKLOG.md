@@ -10,7 +10,7 @@ Legend: ✅ Done · 🟡 Partly done · ⬜ Not started
 |---|---|---|---|
 | 1 | Create Event | ✅ | Task 5. Name, date, venue, description. v2: optional sponsorship target with funding progress. |
 | 2 | Create Sponsor | ✅ | Task 6. Name, contact person, email, phone, amount, status, optional event link. |
-| 3 | Create Sponsorship Record | 🟡 | A sponsor record links to **one** event. A separate Sponsorship entity (one sponsor across many events, as in the Task 3 data model) is still to do. |
+| 3 | Create Sponsorship Record | 🟡 | A sponsor record links to **one** event. A separate Sponsorship entity (one sponsor across many events, as in the Task 3 data model) is planned for the next iteration. |
 | 4 | Record Sponsorship Amount | ✅ | Decimal amount (12 digits, 2 decimals). v2: sponsorship tiers (Platinum–Community). |
 | 5 | Track Sponsorship Status | ✅ | Proposed, Pending, Confirmed, Completed, Cancelled (Task 3 values). |
 | 6 | Track Payment Status | ✅ | v2. Payments per sponsor (amount, date, method, reference); derived Unpaid / Partially paid / Paid / Overdue status from amount, payments and due date. |
@@ -29,7 +29,7 @@ Legend: ✅ Done · 🟡 Partly done · ⬜ Not started
 | Priority | Item | Status |
 |---|---|---|
 | High | Payment status tracking and overdue-payment alert (feature 6) | ✅ v2 |
-| High | Separate Sponsorship entity so one sponsor can support several events (feature 3) | ⬜ |
+| High | Separate Sponsorship entity so one sponsor can support several events (feature 3) | ⬜ Next iteration: split the sponsor into a company record and per-event sponsorships, with a migration script for existing MySQL data |
 | High | Selenium end-to-end tests for the main UI flows | ✅ (incl. payment flow in v2) |
 | High | Jenkins pipeline: build, test and package on every push | ✅ |
 | High | Dockerfile and Docker Compose (application + MySQL), Nginx reverse proxy | ✅ (`docker-compose.yml` in v2) |
@@ -38,7 +38,7 @@ Legend: ✅ Done · 🟡 Partly done · ⬜ Not started
 | Medium | Delete endpoints for events and sponsors | ✅ v2 |
 | Low | Event sponsorship target, sponsor industry/tier fields | ✅ v2 |
 | Low | Activity log / audit trail, CSV export, reports page, dark mode | ✅ v2 |
-| Low | Authentication and user roles | ⬜ |
+| Low | Authentication and user roles | ✅ v2 (Admin and Viewer roles, BCrypt passwords, lockout after 5 failed sign-ins) |
 
 ## Alert Rules (Implemented)
 
@@ -62,7 +62,10 @@ Sponsors with status **Cancelled** are excluded from all sponsor checks.
 ## Release-Ready Baseline
 
 Suggested tag: **`v0.1.0-mvp`** — the first working baseline of the MVP. It uses a 0.x version because
-features 3, 6 and 11 and the CI/CD and container work are still open.
+features 3, 6 and 11 and the CI/CD and container work were still open at that point.
+
+**Current release:** v2, built, tested and deployed by Jenkins build #13 and released to `main` through a pull
+request from `development`. Feature 3 is the only open MVP item.
 
 ### How to verify the baseline
 
