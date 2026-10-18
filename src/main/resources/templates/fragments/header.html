@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<!--
+    Shared top navigation bar: brand, section links, search, theme switch, quick-add and the account menu.
+    On small screens the section links fold into a menu opened by the menu button.
+    Usage: <header th:replace="~{fragments/header :: header('events')}"></header>
+-->
+<header class="appbar" th:fragment="header(active)">
+    <div class="appbar-inner">
+        <a class="brand" th:href="@{/dashboard}">
+            <span class="brand-mark" aria-hidden="true">ES</span>
+            <span class="brand-text">Sponsorship<span>Tracker</span></span>
+        </a>
+
+        <nav class="nav" id="main-nav" aria-label="Main navigation" sec:authorize="isAuthenticated()">
+            <a th:href="@{/dashboard}" th:classappend="${active == 'dashboard'} ? 'active'"
+               th:aria-current="${active == 'dashboard'} ? 'page'">
+                <svg th:replace="~{fragments/icons :: dashboard}"></svg>Dashboard</a>
+            <a th:href="@{/events}" th:classappend="${active == 'events'} ? 'active'"
+               th:aria-current="${active == 'events'} ? 'page'">
+                <svg th:replace="~{fragments/icons :: calendar}"></svg>Events</a>
+            <a th:href="@{/sponsors}" th:classappend="${active == 'sponsors'} ? 'active'"
+               th:aria-current="${active == 'sponsors'} ? 'page'">
+                <svg th:replace="~{fragments/icons :: users}"></svg>Sponsors</a>
+            <a th:href="@{/reports}" th:classappend="${active == 'reports'} ? 'active'"
+               th:aria-current="${active == 'reports'} ? 'page'">
+                <svg th:replace="~{fragments/icons :: chart}"></svg>Reports</a>
+            <a th:href="@{/alerts}" th:classappend="${active == 'alerts'} ? 'active'" sec:authorize="hasRole('ADMIN')"
+               th:aria-current="${active == 'alerts'} ? 'page'">
+                <svg th:replace="~{fragments/icons :: alert}"></svg>Alerts
+                <span class="nav-badge" th:if="${navAlertCount != null and navAlertCount > 0}"
+                      th:text="${navAlertCount}" th:title="|${navAlertCount} open alerts|">3</span></a>
+            <a th:href="@{/activity}" th:classappend="${active == 'activity'} ? 'active'" sec:authorize="hasRole('ADMIN')"
+               th:aria-current="${active == 'activity'} ? 'page'">
+                <svg th:replace="~{fragments/icons :: activity}"></svg>Activity</a>
+        </nav>
+
+        <div class="appbar-actions">
+            <form class="appbar-search" method="get" role="search" th:action="@{/dashboard}"
+                  sec:authorize="isAuthenticated()">
+                <svg th:replace="~{fragments/icons :: search}"></svg>
+                <input class="input" type="search" name="q" id="global-search"
+                       placeholder="Search…" aria-label="Search events and sponsors (shortcut: /)">
+                <kbd class="kbd" aria-hidden="true">/</kbd>
+            </form>
+
+            <button type="button" class="icon-btn theme-toggle" data-theme-toggle aria-label="Toggle dark mode"
+                    title="Toggle dark mode">
+                <svg th:replace="~{fragments/icons :: sun}"></svg>
+                <svg th:replace="~{fragments/icons :: moon}"></svg>
+            </button>
+
+            <details class="menu" id="quick-add" sec:authorize="hasRole('ADMIN')">
+                <summary class="btn btn-primary btn-sm" aria-label="Create new">
+                    <svg th:replace="~{fragments/icons :: plus}"></svg><span class="appbar-label">New</span>
+                </summary>
+                <div class="menu-panel">
+                    <a class="menu-item" th:href="@{/events/new}">
+                        <svg th:replace="~{fragments/icons :: calendar}"></svg>
+                        <span>New event<small>Plan an event and its funding target</small></span></a>
+                    <a class="menu-item" th:href="@{/sponsors/new}">
+                        <svg th:replace="~{fragments/icons :: users}"></svg>
+                        <span>New sponsor<small>Add a sponsor and its package</small></span></a>
+                </div>
+            </details>
+
+            <details class="menu" id="user-menu" sec:authorize="isAuthenticated()">
+                <summary class="user-chip" aria-label="Account menu">
+                    <span class="user-avatar" aria-hidden="true"
+                          th:text="${#strings.toUpperCase(#strings.substring(#authentication.name, 0, 1))}">A</span>
+                    <span class="user-chip-text">
+                        <span class="user-name" id="current-user" sec:authentication="name">admin</span>
+                        <span class="user-role" id="current-role" sec:authorize="hasRole('ADMIN')">Admin</span>
+                        <span class="user-role" id="current-role" sec:authorize="!hasRole('ADMIN')">Viewer</span>
+                    </span>
+                </summary>
+                <div class="menu-panel menu-panel-end">
+                    <div class="menu-heading">
+                        <p>Signed in as <strong sec:authentication="name">admin</strong></p>
+                        <p class="muted" sec:authorize="hasRole('ADMIN')">Full access: can create, edit and delete.</p>
+                        <p class="muted" sec:authorize="!hasRole('ADMIN')">Read-only access: can view and export.</p>
+                    </div>
+                    <a class="menu-item" th:href="@{/actuator/health}">
+                        <svg th:replace="~{fragments/icons :: activity}"></svg><span>Health check</span></a>
+                    <a class="menu-item" th:href="@{/actuator/info}">
+                        <svg th:replace="~{fragments/icons :: info}"></svg><span>Build info</span></a>
+                    <form method="post" th:action="@{/logout}">
+                        <button type="submit" class="menu-item menu-item-danger" id="logout-button">
+                            <svg th:replace="~{fragments/icons :: logout}"></svg><span>Sign out</span></button>
+                    </form>
+                </div>
+            </details>
+
+            <a class="btn btn-primary btn-sm" th:href="@{/login}" sec:authorize="!isAuthenticated()">Sign in</a>
+
+            <button type="button" class="icon-btn menu-toggle" data-nav-toggle aria-controls="main-nav"
+                    aria-expanded="false" aria-label="Open menu" sec:authorize="isAuthenticated()">
+                <svg th:replace="~{fragments/icons :: menu}"></svg>
+            </button>
+        </div>
+    </div>
+</header>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Events')}"></head>
+<body>
+<header th:replace="~{fragments/header :: header('events')}"></header>
+
+<main class="page">
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">Manage</p>
+            <h1 class="page-title">Events</h1>
+            <p class="page-subtitle">Create, track and fund the events your sponsors support.</p>
+        </div>
+        <div class="page-actions">
+            <a class="btn btn-secondary" id="export-events" th:href="@{${pager.exportUrl('/events/export.csv')}}">
+                <svg th:replace="~{fragments/icons :: download}"></svg>Export CSV</a>
+            <a class="btn btn-primary" id="create-event" th:href="@{/events/new}" sec:authorize="hasRole('ADMIN')">
+                <svg th:replace="~{fragments/icons :: plus}"></svg>Create Event</a>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/ui :: flash}"></div>
+
+    <form class="toolbar" id="event-search" method="get" role="search" th:action="@{/events}">
+        <div class="search-field">
+            <svg th:replace="~{fragments/icons :: search}"></svg>
+            <input class="input" type="search" name="q" th:value="${q}" placeholder="Search by name or venue"
+                   aria-label="Search events">
+        </div>
+        <select class="select" name="status" aria-label="Filter by status">
+            <option value="">All statuses</option>
+            <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.label}"
+                    th:selected="${s == status}">Upcoming</option>
+        </select>
+        <input type="hidden" name="sort" th:value="${pager.sortKey}">
+        <input type="hidden" name="dir" th:value="${pager.dir}">
+        <button type="submit" class="btn btn-primary">Search</button>
+        <a class="btn btn-ghost" th:if="${filtered}" th:href="@{/events}">Clear</a>
+    </form>
+
+    <div class="card" th:if="${#lists.isEmpty(events)}">
+        <div class="empty-state">
+            <span class="empty-state-icon"><svg th:replace="~{fragments/icons :: calendar}"></svg></span>
+            <th:block th:unless="${filtered}">
+                <p class="empty-state-title">No events yet.</p>
+                <a class="btn btn-primary" th:href="@{/events/new}" sec:authorize="hasRole('ADMIN')">
+                    <svg th:replace="~{fragments/icons :: plus}"></svg>Create Event</a>
+            </th:block>
+            <th:block th:if="${filtered}">
+                <p class="empty-state-title">No events match your search.</p>
+                <p>Try a different keyword or status.</p>
+                <a class="btn btn-secondary" th:href="@{/events}">Clear filters</a>
+            </th:block>
+        </div>
+    </div>
+
+    <div class="card table-card" th:unless="${#lists.isEmpty(events)}">
+        <div class="table-wrapper">
+            <table class="data-table responsive" id="events-table">
+                <thead>
+                <tr>
+                    <th th:attr="aria-sort=${pager.sortState('name')}">
+                        <a th:replace="~{fragments/ui :: sort(${pager}, 'name', 'Event')}"></a></th>
+                    <th th:attr="aria-sort=${pager.sortState('date')}">
+                        <a th:replace="~{fragments/ui :: sort(${pager}, 'date', 'Date')}"></a></th>
+                    <th th:attr="aria-sort=${pager.sortState('venue')}">
+                        <a th:replace="~{fragments/ui :: sort(${pager}, 'venue', 'Venue')}"></a></th>
+                    <th th:attr="aria-sort=${pager.sortState('target')}" style="min-width: 190px">
+                        <a th:replace="~{fragments/ui :: sort(${pager}, 'target', 'Funding')}"></a></th>
+                    <th>Status</th>
+                    <th class="col-actions"><span class="sr-only">Actions</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="event : ${events}" th:with="row=${funding.get(event.id)}">
+                    <td class="cell-primary" data-label="Event">
+                        <div class="cell-identity">
+                            <div class="date-tile" aria-hidden="true"
+                                 th:classappend="${event.status.name() == 'PAST'} ? 'is-past'">
+                                <span class="date-tile-month"
+                                      th:text="${#temporals.format(event.eventDate, 'MMM')}">Nov</span>
+                                <span class="date-tile-day" th:text="${#temporals.format(event.eventDate, 'dd')}">05</span>
+                            </div>
+                            <div class="cell-identity-text">
+                                <a class="cell-title" th:href="@{/events/{id}(id=${event.id})}"
+                                   th:text="${event.name}">Tech Fest</a>
+                                <p class="cell-sub clamp"
+                                   th:text="${event.description != null} ? |ID ${event.id} · ${event.description}| : |ID ${event.id}|">
+                                    ID 1 · Annual technical festival</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="nowrap" data-label="Date"
+                        th:text="${#temporals.format(event.eventDate, 'dd MMM yyyy')}">05 Nov 2026</td>
+                    <td data-label="Venue" th:text="${event.venue}">Main Auditorium</td>
+                    <td data-label="Funding">
+                        <div class="cell-fill" th:if="${row.hasTarget()}">
+                            <div class="progress" role="progressbar" aria-label="Committed against target"
+                                 aria-valuemin="0" aria-valuemax="100" th:aria-valuenow="${row.progressWidth()}">
+                                <div class="progress-bar" th:style="|width: ${row.progressWidth()}%|"
+                                     th:classappend="${row.percentOfTarget() >= 100} ? 'is-complete' : (${row.percentOfTarget() < 40} ? 'is-low')"></div>
+                            </div>
+                            <p class="cell-sub"
+                               th:text="|${row.percentOfTarget()}% of ${#numbers.formatDecimal(row.target(), 1, 'COMMA', 0, 'POINT')}|">
+                                40% of 500,000</p>
+                        </div>
+                        <div class="cell-stack" th:unless="${row.hasTarget()}">
+                            <p class="amount" th:text="${#numbers.formatDecimal(row.committed(), 1, 'COMMA', 2, 'POINT')}">0.00</p>
+                            <p class="cell-sub">No target set</p>
+                        </div>
+                    </td>
+                    <td data-label="Status">
+                        <span class="badge" th:classappend="${'badge-' + #strings.toLowerCase(event.status.name())}"
+                              th:text="${event.status.label}">Upcoming</span>
+                    </td>
+                    <td class="col-actions">
+                        <div class="row-actions">
+                            <a class="btn btn-sm btn-secondary" th:href="@{/events/{id}(id=${event.id})}">
+                                <svg th:replace="~{fragments/icons :: eye}"></svg>View</a>
+                            <a class="btn btn-sm btn-soft" th:href="@{/events/{id}/edit(id=${event.id})}" sec:authorize="hasRole('ADMIN')">
+                                <svg th:replace="~{fragments/icons :: edit}"></svg>Edit</a>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <nav th:replace="~{fragments/ui :: pagination(${pager}, 'events')}"></nav>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

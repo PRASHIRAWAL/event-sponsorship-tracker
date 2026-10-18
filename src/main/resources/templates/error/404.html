@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Not Found')}"></head>
+<body>
+<header th:replace="~{fragments/header :: header('')}"></header>
+
+<main class="page page-narrow">
+    <div class="card error-page">
+        <p class="error-code">404</p>
+        <h1 class="page-title">Page not found</h1>
+        <p class="muted">The page, event or sponsor you requested does not exist. It may have been deleted.</p>
+        <div class="page-actions">
+            <a class="btn btn-secondary" th:href="@{/dashboard}">Go to Dashboard</a>
+            <a class="btn btn-primary" th:href="@{/events}">Back to Events</a>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

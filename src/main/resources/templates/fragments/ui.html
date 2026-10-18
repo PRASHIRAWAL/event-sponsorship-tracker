@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Small shared UI pieces. -->
+
+<!-- Flash message after a redirect. Usage: <div th:replace="~{fragments/ui :: flash}"></div> -->
+<div th:fragment="flash" class="banner banner-success" id="success-message" role="status" th:if="${successMessage}">
+    <svg th:replace="~{fragments/icons :: check}"></svg>
+    <span th:text="${successMessage}">Saved.</span>
+    <button type="button" class="banner-close" data-dismiss aria-label="Dismiss">
+        <svg th:replace="~{fragments/icons :: x}"></svg>
+    </button>
+</div>
+
+<!-- Sponsorship status badge. Usage: <span th:replace="~{fragments/ui :: status(${sponsor.sponsorshipStatus})}"></span> -->
+<span th:fragment="status(value)" class="badge"
+      th:classappend="${'badge-' + #strings.toLowerCase(value.name())}" th:text="${value.label}">Confirmed</span>
+
+<!-- Payment status badge. -->
+<span th:fragment="payment(value)" class="badge"
+      th:classappend="${'badge-pay-' + #strings.toLowerCase(value.name())}" th:text="${value.label}">Paid</span>
+
+<!-- Tier chip (renders nothing when the sponsor has no tier). -->
+<span th:fragment="tier(value)" th:if="${value != null}" class="tier"
+      th:classappend="${'tier-' + #strings.toLowerCase(value.name())}" th:text="${value.label}">Gold</span>
+
+<!-- Money with two decimals; a dash when there is no amount. -->
+<span th:fragment="money(value)" th:remove="tag">
+    <th:block th:if="${value != null}" th:text="${#numbers.formatDecimal(value, 1, 'COMMA', 2, 'POINT')}">0.00</th:block>
+    <th:block th:if="${value == null}">—</th:block>
+</span>
+
+<!-- Pagination bar. Usage: <nav th:replace="~{fragments/ui :: pagination(${pager}, 'events')}"></nav> -->
+<nav th:fragment="pagination(pager, noun)" class="pagination" aria-label="Pagination">
+    <span class="result-meta"
+          th:text="|Showing ${pager.from}–${pager.to} of ${pager.totalElements} ${noun}|">Showing 1–10 of 42</span>
+    <div class="pagination-pages" th:if="${pager.totalPages > 1}">
+        <a class="page-link" th:href="@{${pager.url(pager.number - 1)}}" rel="prev"
+           th:classappend="${!pager.hasPrevious()} ? 'is-disabled'" aria-label="Previous page">&lsaquo;</a>
+        <th:block th:each="n : ${pager.pageNumbers()}">
+            <span class="page-gap" th:if="${n < 0}">…</span>
+            <a class="page-link" th:if="${n >= 0}" th:href="@{${pager.url(n)}}" th:text="${n + 1}"
+               th:classappend="${n == pager.number} ? 'is-current'"
+               th:aria-current="${n == pager.number} ? 'page'">1</a>
+        </th:block>
+        <a class="page-link" th:href="@{${pager.url(pager.number + 1)}}" rel="next"
+           th:classappend="${!pager.hasNext()} ? 'is-disabled'" aria-label="Next page">&rsaquo;</a>
+    </div>
+    <div class="page-size">
+        <span>Per page</span>
+        <a th:each="s : ${pager.pageSizes}" th:href="@{${pager.sizeUrl(s)}}" th:text="${s}"
+           th:classappend="${s == pager.size} ? 'is-current'">10</a>
+    </div>
+</nav>
+
+<!-- Sortable column header link. Usage inside <th th:attr="aria-sort=${pager.sortState('name')}"> -->
+<a th:fragment="sort(pager, key, label)" class="sort-link" th:href="@{${pager.sortUrl(key)}}" th:text="${label}">Name</a>
+
+<!-- Activity timeline. Usage: <ol th:replace="~{fragments/ui :: timeline(${activity})}"></ol> -->
+<ol th:fragment="timeline(entries)" class="timeline">
+    <li class="timeline-item" th:each="entry : ${entries}">
+        <span class="timeline-dot" th:classappend="${'is-' + #strings.toLowerCase(entry.type.name())}">
+            <!-- th:case sits on a wrapper because th:replace would run before it on the same element -->
+            <th:block th:switch="${entry.type.name()}">
+                <th:block th:case="'CREATED'"><svg th:replace="~{fragments/icons :: plus}"></svg></th:block>
+                <th:block th:case="'DELETED'"><svg th:replace="~{fragments/icons :: trash}"></svg></th:block>
+                <th:block th:case="'PAYMENT_RECORDED'"><svg th:replace="~{fragments/icons :: wallet}"></svg></th:block>
+                <th:block th:case="'PAYMENT_REMOVED'"><svg th:replace="~{fragments/icons :: wallet}"></svg></th:block>
+                <th:block th:case="*"><svg th:replace="~{fragments/icons :: edit}"></svg></th:block>
+            </th:block>
+        </span>
+        <div class="timeline-body">
+            <p class="timeline-message">
+                <a th:if="${entry.linkable}" th:text="${entry.message}"
+                   th:href="${entry.subjectType == 'EVENT'} ? @{/events/{id}(id=${entry.subjectId})} : @{/sponsors/{id}(id=${entry.subjectId})}">Message</a>
+                <span th:unless="${entry.linkable}" th:text="${entry.message}">Message</span>
+            </p>
+            <p class="timeline-time">
+                <span th:text="${entry.type.label}">Created</span> ·
+                <th:block th:if="${entry.actor != null}"><span class="timeline-actor" th:text="${entry.actor}">admin</span> ·</th:block>
+                <time th:datetime="${entry.occurredAt}"
+                      th:text="${#temporals.format(entry.occurredAt, 'dd MMM yyyy, HH:mm')}">17 Oct 2026, 10:24</time>
+            </p>
+        </div>
+    </li>
+</ol>
+</body>
+</html>

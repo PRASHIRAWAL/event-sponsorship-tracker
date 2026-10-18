@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+    Severity badge for an alert rule. The severity itself is defined on AlertRule:
+      High   - unresolved money or decisions: committed without amount, undecided for a past event, payment overdue
+      Medium - follow-up needed soon: no email or phone, upcoming event without sponsors or below target
+      Low    - incomplete records: missing contact person, not linked to an event
+    Usage: <span th:replace="~{fragments/alerts :: severity(${alert.rule()})}"></span>
+-->
+<span th:fragment="severity(rule)" class="severity"
+      th:classappend="${'severity-' + #strings.toLowerCase(rule.severity.name())}"
+      th:text="${rule.severity.label}">High</span>
+</body>
+</html>

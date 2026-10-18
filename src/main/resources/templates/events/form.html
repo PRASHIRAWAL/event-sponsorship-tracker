@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${event.id == null} ? 'Create Event' : 'Edit Event')}"></head>
+<body>
+<header th:replace="~{fragments/header :: header('events')}"></header>
+
+<main class="page page-narrow">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a th:href="@{/events}">Events</a>
+        <span aria-hidden="true">/</span>
+        <span th:text="${event.id == null} ? 'New' : 'Edit'">New</span>
+    </nav>
+
+    <div class="page-header">
+        <div>
+            <h1 class="page-title" th:text="${event.id == null} ? 'Create Event' : 'Edit Event'">Create Event</h1>
+            <p class="page-subtitle"
+               th:text="${event.id == null} ? 'Add an event so sponsors can be linked to it.' : 'Update the details of this event.'">
+                Add an event so sponsors can be linked to it.</p>
+        </div>
+    </div>
+
+    <div class="banner banner-error" id="error-summary" role="alert" th:if="${#fields.hasErrors('event.*')}">
+        <svg th:replace="~{fragments/icons :: error}"></svg>
+        <span>Please correct the highlighted fields below.</span>
+    </div>
+
+    <form class="card" id="event-form" method="post" th:object="${event}"
+          th:action="${event.id == null} ? @{/events} : @{/events/{id}(id=${event.id})}">
+        <section class="form-section">
+            <div>
+                <h2 class="form-section-title">Event details</h2>
+                <p class="form-section-hint">The name, date and place shown to everyone tracking this event.</p>
+            </div>
+            <div class="form-fields">
+                <div class="field">
+                    <label class="label" for="name">Event Name <span class="required">*</span></label>
+                    <input class="input" type="text" id="name" th:field="*{name}" maxlength="150" required
+                           placeholder="e.g. Annual Tech Fest"
+                           th:classappend="${#fields.hasErrors('name')} ? 'invalid'">
+                    <p class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Error</p>
+                </div>
+
+                <div class="form-grid">
+                    <div class="field">
+                        <label class="label" for="eventDate">Event Date <span class="required">*</span></label>
+                        <input class="input" type="date" id="eventDate" th:field="*{eventDate}" required
+                               th:classappend="${#fields.hasErrors('eventDate')} ? 'invalid'">
+                        <p class="field-error" th:if="${#fields.hasErrors('eventDate')}" th:errors="*{eventDate}">Error</p>
+                    </div>
+
+                    <div class="field">
+                        <label class="label" for="venue">Venue <span class="required">*</span></label>
+                        <input class="input" type="text" id="venue" th:field="*{venue}" maxlength="150" required
+                               placeholder="e.g. Main Auditorium"
+                               th:classappend="${#fields.hasErrors('venue')} ? 'invalid'">
+                        <p class="field-error" th:if="${#fields.hasErrors('venue')}" th:errors="*{venue}">Error</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <div>
+                <h2 class="form-section-title">Funding goal</h2>
+                <p class="form-section-hint">How much sponsorship this event needs. Progress counts Confirmed and
+                    Completed sponsors; an alert is raised when the event is close and still below target.</p>
+            </div>
+            <div class="form-fields">
+                <div class="field">
+                    <label class="label" for="sponsorshipTarget">Sponsorship Target <span class="optional">(optional)</span></label>
+                    <div class="input-affix">
+                        <span class="affix" aria-hidden="true">₹</span>
+                        <input class="input" type="number" id="sponsorshipTarget" th:field="*{sponsorshipTarget}"
+                               min="0.01" step="0.01" placeholder="e.g. 250000"
+                               th:classappend="${#fields.hasErrors('sponsorshipTarget')} ? 'invalid'">
+                    </div>
+                    <p class="field-error" th:if="${#fields.hasErrors('sponsorshipTarget')}"
+                       th:errors="*{sponsorshipTarget}">Error</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <div>
+                <h2 class="form-section-title">Description</h2>
+                <p class="form-section-hint">Optional notes about what the event is and who it is for.</p>
+            </div>
+            <div class="form-fields">
+                <div class="field">
+                    <label class="label" for="description">Description <span class="optional">(optional)</span></label>
+                    <textarea class="textarea" id="description" th:field="*{description}" rows="4" maxlength="500"
+                              placeholder="What is this event about?" data-count="description-count"
+                              th:classappend="${#fields.hasErrors('description')} ? 'invalid'"></textarea>
+                    <p class="char-count" id="description-count" aria-live="polite">Up to 500 characters.</p>
+                    <p class="field-error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">Error</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <span class="form-actions-note">Fields marked <span class="required">*</span> are required.</span>
+            <a class="btn btn-secondary" th:href="${event.id == null} ? @{/events} : @{/events/{id}(id=${event.id})}">Cancel</a>
+            <button type="submit" class="btn btn-primary" id="save-event"
+                    th:text="${event.id == null} ? 'Create Event' : 'Save Changes'">Save</button>
+        </div>
+    </form>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

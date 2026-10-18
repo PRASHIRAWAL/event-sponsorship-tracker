@@ -1,0 +1,86 @@
+package com.eventtracker.controller;
+
+import com.eventtracker.service.EventNotFoundException;
+import com.eventtracker.service.InvalidEventReferenceException;
+import com.eventtracker.service.InvalidSponsorAmountException;
+import com.eventtracker.service.PaymentNotAllowedException;
+import com.eventtracker.service.PaymentNotFoundException;
+import com.eventtracker.service.SponsorNotFoundException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+@RestControllerAdvice(assignableTypes = {
+        EventApiController.class, SponsorApiController.class, DashboardApiController.class,
+        ReportApiController.class})
+public class ApiExceptionHandler {
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ProblemDetail handleValidationErrors(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
+            errors.putIfAbsent(fieldError.getField(), fieldError.getDefaultMessage());
+        }
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed");
+        problem.setProperty("errors", errors);
+        return problem;
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ProblemDetail handleUnreadableBody(HttpMessageNotReadableException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                "Malformed request body. Check the JSON syntax, use the yyyy-MM-dd format for dates "
+                        + "and one of the allowed values for status fields.");
+    }
+
+    @ExceptionHandler(InvalidEventReferenceException.class)
+    public ProblemDetail handleInvalidEventReference(InvalidEventReferenceException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed");
+        problem.setProperty("errors", Map.of("eventId", InvalidEventReferenceException.MESSAGE));
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidSponsorAmountException.class)
+    public ProblemDetail handleInvalidSponsorAmount(InvalidSponsorAmountException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed");
+        problem.setProperty("errors", Map.of("sponsorshipAmount", ex.getMessage()));
+        return problem;
+    }
+
+    /** Business rule violations on payments: the request is well-formed but cannot be applied. */
+    @ExceptionHandler(PaymentNotAllowedException.class)
+    public ProblemDetail handlePaymentNotAllowed(PaymentNotAllowedException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+        problem.setProperty("errors", Map.of(ex.getField(), ex.getMessage()));
+        return problem;
+    }
+
+    @ExceptionHandler(SponsorNotFoundException.class)
+    public ProblemDetail handleSponsorNotFound(SponsorNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(PaymentNotFoundException.class)
+    public ProblemDetail handlePaymentNotFound(PaymentNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ProblemDetail handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                "Invalid value '" + ex.getValue() + "' for parameter '" + ex.getName() + "'");
+    }
+
+    @ExceptionHandler(EventNotFoundException.class)
+    public ProblemDetail handleNotFound(EventNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+}

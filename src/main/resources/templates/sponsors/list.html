@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Sponsors')}"></head>
+<body>
+<header th:replace="~{fragments/header :: header('sponsors')}"></header>
+
+<main class="page">
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">Manage</p>
+            <h1 class="page-title">Sponsors</h1>
+            <p class="page-subtitle">Sponsor contacts, packages, amounts, payments and status.</p>
+        </div>
+        <div class="page-actions">
+            <a class="btn btn-secondary" id="export-sponsors" th:href="@{${pager.exportUrl('/sponsors/export.csv')}}">
+                <svg th:replace="~{fragments/icons :: download}"></svg>Export CSV</a>
+            <a class="btn btn-primary" id="create-sponsor" th:href="@{/sponsors/new}" sec:authorize="hasRole('ADMIN')">
+                <svg th:replace="~{fragments/icons :: plus}"></svg>Add Sponsor</a>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/ui :: flash}"></div>
+
+    <form class="toolbar" id="sponsor-search" method="get" role="search" th:action="@{/sponsors}">
+        <div class="search-field">
+            <svg th:replace="~{fragments/icons :: search}"></svg>
+            <input class="input" type="search" name="q" th:value="${q}"
+                   placeholder="Search by name, contact, email or industry" aria-label="Search sponsors">
+        </div>
+        <select class="select" name="status" aria-label="Filter by status">
+            <option value="">All statuses</option>
+            <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.label}"
+                    th:selected="${s == status}">Confirmed</option>
+        </select>
+        <select class="select" name="tier" aria-label="Filter by tier">
+            <option value="">All tiers</option>
+            <option th:each="t : ${tiers}" th:value="${t}" th:text="${t.label}"
+                    th:selected="${t == tier}">Gold</option>
+        </select>
+        <select class="select" name="payment" aria-label="Filter by payment status">
+            <option value="">Any payment</option>
+            <option th:each="p : ${paymentStatuses}" th:value="${p}" th:text="${p.label}"
+                    th:selected="${p == payment}">Overdue</option>
+        </select>
+        <select class="select" name="eventId" aria-label="Filter by event">
+            <option value="">All events</option>
+            <option th:each="e : ${events}" th:value="${e.id}" th:text="${e.name}"
+                    th:selected="${e.id == eventId}">Tech Fest</option>
+        </select>
+        <input type="hidden" name="sort" th:value="${pager.sortKey}">
+        <input type="hidden" name="dir" th:value="${pager.dir}">
+        <button type="submit" class="btn btn-primary">Search</button>
+        <a class="btn btn-ghost" th:if="${filtered}" th:href="@{/sponsors}">Clear</a>
+    </form>
+
+    <div class="card" th:if="${#lists.isEmpty(sponsors)}">
+        <div class="empty-state">
+            <span class="empty-state-icon"><svg th:replace="~{fragments/icons :: users}"></svg></span>
+            <th:block th:unless="${filtered}">
+                <p class="empty-state-title">No sponsors yet.</p>
+                <a class="btn btn-primary" th:href="@{/sponsors/new}" sec:authorize="hasRole('ADMIN')">
+                    <svg th:replace="~{fragments/icons :: plus}"></svg>Add Sponsor</a>
+            </th:block>
+            <th:block th:if="${filtered}">
+                <p class="empty-state-title">No sponsors match your search.</p>
+                <p>Try a different keyword, status, tier, payment status or event.</p>
+                <a class="btn btn-secondary" th:href="@{/sponsors}">Clear filters</a>
+            </th:block>
+        </div>
+    </div>
+
+    <div class="card table-card" th:unless="${#lists.isEmpty(sponsors)}">
+        <div class="table-wrapper">
+            <table class="data-table responsive" id="sponsors-table">
+                <thead>
+                <tr>
+                    <th th:attr="aria-sort=${pager.sortState('name')}">
+                        <a th:replace="~{fragments/ui :: sort(${pager}, 'name', 'Sponsor')}"></a></th>
+                    <th>Contact</th>
+                    <th>Event</th>
+                    <th class="col-num" th:attr="aria-sort=${pager.sortState('amount')}">
+                        <a th:replace="~{fragments/ui :: sort(${pager}, 'amount', 'Amount')}"></a></th>
+                    <th th:attr="aria-sort=${pager.sortState('paid')}" style="min-width: 150px">
+                        <a th:replace="~{fragments/ui :: sort(${pager}, 'paid', 'Payment')}"></a></th>
+                    <th th:attr="aria-sort=${pager.sortState('status')}">
+                        <a th:replace="~{fragments/ui :: sort(${pager}, 'status', 'Status')}"></a></th>
+                    <th class="col-actions"><span class="sr-only">Actions</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="sponsor : ${sponsors}">
+                    <td class="cell-primary" data-label="Sponsor">
+                        <div class="cell-identity">
+                            <span class="avatar" aria-hidden="true" th:classappend="${'avatar-' + (sponsor.id % 6)}"
+                                  th:text="${#strings.substring(sponsor.name, 0, 1)}">A</span>
+                            <div class="cell-identity-text">
+                                <a class="cell-title" th:href="@{/sponsors/{id}(id=${sponsor.id})}"
+                                   th:text="${sponsor.name}">Acme Corp</a>
+                                <p class="cell-sub">
+                                    <span th:replace="~{fragments/ui :: tier(${sponsor.tier})}"></span>
+                                    <span th:text="${sponsor.industry ?: ('ID ' + sponsor.id)}">IT</span>
+                                </p>
+                            </div>
+                        </div>
+                    </td>
+                    <td data-label="Contact">
+                        <div class="cell-stack">
+                            <p th:text="${sponsor.contactPerson ?: '—'}">Jane Doe</p>
+                            <p class="cell-sub" th:if="${sponsor.email != null}">
+                                <a th:href="|mailto:${sponsor.email}|" th:text="${sponsor.email}">jane@acme.com</a>
+                            </p>
+                            <p class="cell-sub" th:if="${sponsor.phone != null}" th:text="${sponsor.phone}">
+                                +91 98765 43210</p>
+                        </div>
+                    </td>
+                    <td data-label="Event">
+                        <div class="cell-stack" th:if="${sponsor.event != null}">
+                            <a th:href="@{/events/{id}(id=${sponsor.event.id})}" th:text="${sponsor.event.name}">Tech Fest</a>
+                            <p class="cell-sub"
+                               th:text="${#temporals.format(sponsor.event.eventDate, 'dd MMM yyyy')}">05 Nov 2026</p>
+                        </div>
+                        <span class="badge badge-neutral" th:if="${sponsor.event == null}">Not linked</span>
+                    </td>
+                    <td class="col-num" data-label="Amount">
+                        <span class="amount" th:if="${sponsor.sponsorshipAmount != null}"
+                              th:text="${#numbers.formatDecimal(sponsor.sponsorshipAmount, 1, 'COMMA', 2, 'POINT')}">50,000.00</span>
+                        <span class="muted" th:if="${sponsor.sponsorshipAmount == null}">—</span>
+                    </td>
+                    <td data-label="Payment">
+                        <div class="cell-stack cell-fill">
+                            <span th:replace="~{fragments/ui :: payment(${sponsor.paymentStatus})}"></span>
+                            <th:block th:if="${sponsor.sponsorshipAmount != null and sponsor.paymentStatus.name() != 'NOT_APPLICABLE'}">
+                                <div class="progress" aria-hidden="true" style="margin-top: 6px">
+                                    <div class="progress-bar" th:style="|width: ${sponsor.paidPercent}%|"
+                                         th:classappend="${sponsor.paidPercent >= 100} ? 'is-complete'"></div>
+                                </div>
+                                <p class="cell-sub" th:text="|${sponsor.paidPercent}% paid|">50% paid</p>
+                            </th:block>
+                        </div>
+                    </td>
+                    <td data-label="Status">
+                        <span class="badge" th:classappend="${'badge-' + #strings.toLowerCase(sponsor.sponsorshipStatus.name())}"
+                              th:text="${sponsor.sponsorshipStatus.label}">Confirmed</span>
+                    </td>
+                    <td class="col-actions">
+                        <div class="row-actions">
+                            <a class="btn btn-sm btn-secondary" th:href="@{/sponsors/{id}(id=${sponsor.id})}">
+                                <svg th:replace="~{fragments/icons :: eye}"></svg>View</a>
+                            <a class="btn btn-sm btn-soft" th:href="@{/sponsors/{id}/edit(id=${sponsor.id})}" sec:authorize="hasRole('ADMIN')">
+                                <svg th:replace="~{fragments/icons :: edit}"></svg>Edit</a>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <nav th:replace="~{fragments/ui :: pagination(${pager}, 'sponsors')}"></nav>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

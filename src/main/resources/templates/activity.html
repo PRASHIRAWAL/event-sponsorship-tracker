@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Activity')}"></head>
+<body>
+<header th:replace="~{fragments/header :: header('activity')}"></header>
+
+<main class="page page-narrow">
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">Audit trail</p>
+            <h1 class="page-title">Activity</h1>
+            <p class="page-subtitle">Every change to events, sponsors and payments, newest first.</p>
+        </div>
+    </div>
+
+    <nav class="chip-group" aria-label="Filter activity">
+        <a class="chip" th:href="@{/activity}" th:classappend="${type == null} ? 'is-active'">Everything</a>
+        <a class="chip" th:href="@{/activity(type='EVENT')}" th:classappend="${type == 'EVENT'} ? 'is-active'">
+            <svg th:replace="~{fragments/icons :: calendar}"></svg>Events</a>
+        <a class="chip" th:href="@{/activity(type='SPONSOR')}" th:classappend="${type == 'SPONSOR'} ? 'is-active'">
+            <svg th:replace="~{fragments/icons :: users}"></svg>Sponsors &amp; payments</a>
+    </nav>
+
+    <section class="card" id="activity-list">
+        <div class="empty-state" th:if="${entries.empty}">
+            <span class="empty-state-icon"><svg th:replace="~{fragments/icons :: activity}"></svg></span>
+            <p class="empty-state-title">No activity yet.</p>
+            <p>Create an event or sponsor and it will show up here.</p>
+        </div>
+        <th:block th:unless="${entries.empty}">
+            <ol th:replace="~{fragments/ui :: timeline(${entries.content})}"></ol>
+        </th:block>
+        <nav class="pagination" aria-label="Pagination" th:if="${entries.totalPages > 1}">
+            <span class="result-meta" th:text="|Page ${entries.number + 1} of ${entries.totalPages} · ${entries.totalElements} entries|">Page 1</span>
+            <div class="pagination-pages">
+                <a class="page-link" th:href="@{/activity(type=${type},page=${entries.number - 1})}"
+                   th:classappend="${entries.first} ? 'is-disabled'" rel="prev">&lsaquo; Newer</a>
+                <a class="page-link" th:href="@{/activity(type=${type},page=${entries.number + 1})}"
+                   th:classappend="${entries.last} ? 'is-disabled'" rel="next">Older &rsaquo;</a>
+            </div>
+        </nav>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

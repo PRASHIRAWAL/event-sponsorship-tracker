@@ -1,0 +1,65 @@
+# Full local stack: MySQL + Spring Boot app + Nginx reverse proxy.
+#
+#   1. mvn -B package -DskipTests            (the app image copies the JAR from target/)
+#   2. copy .env.example to .env and set the passwords
+#   3. docker compose up -d --build
+#   4. open http://localhost:8088 (or the NGINX_PORT you set)
+#
+# This stack is separate from the Jenkins deployment (its own project name, network and volume),
+# so it never touches the eventtracker-app / eventtracker-nginx / eventtracker-mysql containers.
+name: eventtracker-stack
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: eventsponsorship_db
+      MYSQL_USER: ${DB_USERNAME:-eventtracker}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  app:
+    build: .
+    image: event-sponsorship-tracker:compose
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/eventsponsorship_db
+      DB_USERNAME: ${DB_USERNAME:-eventtracker}
+      DB_PASSWORD: ${DB_PASSWORD}
+      # Sign-in accounts: ADMIN can change data, VIEWER is read-only
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
+      VIEWER_USERNAME: ${VIEWER_USERNAME:-viewer}
+      VIEWER_PASSWORD: ${VIEWER_PASSWORD:-}
+      # Seeds sample data only when the database has no events yet
+      APP_DEMO_DATA: ${APP_DEMO_DATA:-true}
+    ports:
+      - "${APP_PORT:-8089}:8080"
+    networks:
+      default:
+        # The Nginx config proxies to this host name
+        aliases:
+          - eventtracker-app
+    restart: unless-stopped
+
+  nginx:
+    build: deploy/nginx
+    image: eventtracker-nginx:compose
+    depends_on:
+      - app
+    ports:
+      - "${NGINX_PORT:-8088}:80"
+    restart: unless-stopped
+
+volumes:
+  mysql-data:

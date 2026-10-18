@@ -1,0 +1,119 @@
+---
+- name: Task 14 - Provision and deploy isolated test application
+  hosts: app_servers
+  gather_facts: false
+
+  vars:
+    app_container: task14-app
+    app_image: prashirawal/event-sponsorship-tracker:13
+    app_network: task14-net
+    app_port: "18081"
+    db_url: "jdbc:mysql://task14-mysql:3306/task14_db"
+    db_user: "task14_user"
+    db_password: "{{ lookup('env', 'TASK14_DB_PASSWORD') }}"
+    # v2 sign-in. A blank ADMIN_PASSWORD makes the app generate a one-off password (printed in its log);
+    # a blank VIEWER_PASSWORD disables the viewer account.
+    admin_password: "{{ lookup('env', 'ADMIN_PASSWORD') }}"
+    viewer_password: "{{ lookup('env', 'VIEWER_PASSWORD') }}"
+
+  tasks:
+    - name: Verify Docker CLI access
+      ansible.builtin.command: docker info
+      changed_when: false
+
+    - name: Inspect isolated network
+      ansible.builtin.command: docker network inspect {{ app_network }}
+      changed_when: false
+
+    - name: Check test database container state
+      ansible.builtin.command:
+        argv:
+          - docker
+          - inspect
+          - task14-mysql
+          - --format
+          - "{{ '{{' }}.State.Running{{ '}}' }}"
+      register: db_state
+      changed_when: false
+
+    - name: Start test database only when stopped
+      ansible.builtin.command: docker start task14-mysql
+      when: db_state.stdout != "true"
+      changed_when: true
+
+    - name: Inspect application container
+      ansible.builtin.command:
+        argv:
+          - docker
+          - inspect
+          - task14-app
+          - --format
+          - "{{ '{{' }}.Config.Image{{ '}}' }}"
+      register: current_app
+      changed_when: false
+      failed_when: false
+
+    - name: Check application container state
+      ansible.builtin.command:
+        argv:
+          - docker
+          - inspect
+          - task14-app
+          - --format
+          - "{{ '{{' }}.State.Running{{ '}}' }}"
+      register: app_state
+      changed_when: false
+      failed_when: false
+      when: current_app.rc == 0
+
+    - name: Remove application container if image differs
+      ansible.builtin.command: docker rm -f {{ app_container }}
+      when: current_app.rc == 0 and current_app.stdout != app_image
+
+    # Secrets are passed to Docker by name (-e NAME) so their values never appear on the command line.
+    - name: Deploy application if missing or image differs
+      ansible.builtin.command: >
+        docker run -d
+        --name {{ app_container }}
+        --network {{ app_network }}
+        --restart unless-stopped
+        -p {{ app_port }}:8080
+        -e DB_URL={{ db_url }}
+        -e DB_USERNAME={{ db_user }}
+        -e DB_PASSWORD
+        -e ADMIN_PASSWORD
+        -e VIEWER_PASSWORD
+        {{ app_image }}
+      environment:
+        DB_PASSWORD: "{{ db_password }}"
+        ADMIN_PASSWORD: "{{ admin_password }}"
+        VIEWER_PASSWORD: "{{ viewer_password }}"
+      no_log: true
+      when: current_app.rc != 0 or current_app.stdout != app_image
+
+    - name: Recover stopped application container
+      ansible.builtin.command: docker start task14-app
+      when:
+        - current_app.rc == 0
+        - current_app.stdout == app_image
+        - app_state.stdout | default('false') != "true"
+      changed_when: true
+
+    - name: Wait for application health endpoint
+      ansible.builtin.uri:
+        url: "http://localhost:{{ app_port }}/actuator/health"
+        method: GET
+        status_code: 200
+      register: app_health
+      retries: 18
+      delay: 10
+      until: app_health.status == 200 and app_health.json.status == "UP"
+
+    - name: Display health result
+      ansible.builtin.debug:
+        msg: "Application health: {{ app_health.json.status }}"
+
+    - name: Explain how to sign in when no admin password was given
+      ansible.builtin.debug:
+        msg: "ADMIN_PASSWORD was not set; run 'docker logs {{ app_container }}' to find the generated admin password."
+      when: admin_password | length == 0

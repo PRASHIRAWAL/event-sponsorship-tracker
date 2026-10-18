@@ -1,0 +1,58 @@
+Task 13: First Ansible Execution Log
+Date: 14 October 2026
+Target: localhost (Ubuntu 24.04 LTS under WSL2)
+Ansible Core: 2.16.3
+Playbook: configure_server.yml
+Inventory: inventory.ini
+
+Syntax validation:
+Command: ansible-playbook -i inventory.ini configure_server.yml --syntax-check
+Result: Passed
+
+First execution:
+Command: ansible-playbook -i inventory.ini configure_server.yml
+
+PLAY [Configure Event Sponsorship Tracker prerequisites]
+
+TASK [Gathering Facts]
+ok: [localhost]
+
+TASK [Install prerequisite packages]
+changed: [localhost]
+
+TASK [Create application service group]
+changed: [localhost]
+
+TASK [Create application service user]
+changed: [localhost]
+
+TASK [Create application directories]
+changed: [localhost] for all three directories
+
+TASK [Create deployment specification]
+changed: [localhost]
+
+TASK [Check Nginx package installation]
+ok: [localhost]
+
+TASK [Display configuration summary]
+ok: [localhost]
+
+PLAY RECAP
+localhost : ok=8 changed=5 unreachable=0 failed=0 skipped=0 rescued=0 ignored=0
+
+Verification:
+- eventtracker system user and group exist.
+- All three application directories exist with permissions 0750.
+- curl, ca-certificates, unzip and nginx are installed.
+- deployment-spec.txt was read successfully using sudo.
+- Nginx version: 1.24.0 (Ubuntu).
+
+Second execution / idempotency test:
+Command: ansible-playbook -i inventory.ini configure_server.yml
+
+PLAY RECAP
+localhost : ok=8 changed=0 unreachable=0 failed=0 skipped=0 rescued=0 ignored=0
+
+Conclusion:
+The playbook completed successfully on the first run and made no changes on the second run. No task failed or became unreachable.

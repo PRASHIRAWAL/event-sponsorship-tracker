@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${event.name})}"></head>
+<body>
+<header th:replace="~{fragments/header :: header('events')}"></header>
+
+<main class="page">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a th:href="@{/events}">Events</a>
+        <span aria-hidden="true">/</span>
+        <span th:text="${event.name}">Tech Fest</span>
+    </nav>
+
+    <div th:replace="~{fragments/ui :: flash}"></div>
+
+    <section class="card detail-hero" id="event-details">
+        <div class="detail-hero-main">
+            <div class="date-tile date-tile-lg" aria-hidden="true"
+                 th:classappend="${event.status.name() == 'PAST'} ? 'is-past'">
+                <span class="date-tile-month" th:text="${#temporals.format(event.eventDate, 'MMM')}">Nov</span>
+                <span class="date-tile-day" th:text="${#temporals.format(event.eventDate, 'dd')}">05</span>
+            </div>
+            <div>
+                <h1 class="page-title">
+                    <span th:text="${event.name}">Tech Fest</span>
+                    <span class="badge" th:classappend="${'badge-' + #strings.toLowerCase(event.status.name())}"
+                          th:text="${event.status.label}">Upcoming</span>
+                </h1>
+                <div class="detail-meta">
+                    <span><svg th:replace="~{fragments/icons :: calendar}"></svg>
+                        <span th:text="${#temporals.format(event.eventDate, 'EEEE, dd MMM yyyy')}">Thursday, 05 Nov 2026</span></span>
+                    <span><svg th:replace="~{fragments/icons :: mapPin}"></svg>
+                        <span th:text="${event.venue}">Main Auditorium</span></span>
+                    <span th:if="${event.status.name() == 'UPCOMING'}"><svg th:replace="~{fragments/icons :: clock}"></svg>
+                        <span th:text="${event.daysUntil == 0} ? 'Today' : |In ${event.daysUntil} day(s)|">In 5 days</span></span>
+                </div>
+            </div>
+        </div>
+        <div class="page-actions">
+            <a class="btn btn-secondary" th:href="@{/events}">
+                <svg th:replace="~{fragments/icons :: arrowLeft}"></svg>Back</a>
+            <th:block sec:authorize="hasRole('ADMIN')">
+            <a class="btn btn-primary" id="edit-event" th:href="@{/events/{id}/edit(id=${event.id})}">
+                <svg th:replace="~{fragments/icons :: edit}"></svg>Edit Event</a>
+            <form class="inline-form" method="post" th:action="@{/events/{id}/delete(id=${event.id})}"
+                  th:data-confirm="|Delete event &quot;${event.name}&quot;?|"
+                  th:data-confirm-detail="${#lists.isEmpty(sponsors)} ? 'This cannot be undone.' : |Its ${#lists.size(sponsors)} sponsor(s) will be kept but no longer linked to an event. This cannot be undone.|">
+                <button type="submit" class="btn btn-danger-soft" id="delete-event">
+                    <svg th:replace="~{fragments/icons :: trash}"></svg>Delete</button>
+            </form>
+            </th:block>
+        </div>
+    </section>
+
+    <section class="stat-grid" aria-label="Event summary">
+        <div class="card stat">
+            <span class="kpi-icon kpi-icon-violet"><svg th:replace="~{fragments/icons :: target}"></svg></span>
+            <div>
+                <p class="stat-label">Sponsorship target</p>
+                <p class="stat-value" id="event-target"
+                   th:text="${funding.hasTarget()} ? ${#numbers.formatDecimal(funding.target(), 1, 'COMMA', 2, 'POINT')} : 'Not set'">0.00</p>
+            </div>
+        </div>
+        <div class="card stat">
+            <span class="kpi-icon kpi-icon-success"><svg th:replace="~{fragments/icons :: wallet}"></svg></span>
+            <div>
+                <p class="stat-label">Committed sponsorship</p>
+                <p class="stat-value" id="event-committed-amount"
+                   th:text="${#numbers.formatDecimal(committedAmount, 1, 'COMMA', 2, 'POINT')}">0.00</p>
+            </div>
+        </div>
+        <div class="card stat">
+            <span class="kpi-icon kpi-icon-info"><svg th:replace="~{fragments/icons :: check}"></svg></span>
+            <div>
+                <p class="stat-label">Collected</p>
+                <p class="stat-value" id="event-collected-amount"
+                   th:text="${#numbers.formatDecimal(funding.collected(), 1, 'COMMA', 2, 'POINT')}">0.00</p>
+            </div>
+        </div>
+        <div class="card stat">
+            <span class="kpi-icon kpi-icon-neutral"><svg th:replace="~{fragments/icons :: users}"></svg></span>
+            <div>
+                <p class="stat-label">Linked sponsors</p>
+                <p class="stat-value" th:text="${#lists.size(sponsors)}">0</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="grid-main-side">
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <h2 class="section-title">Funding progress</h2>
+                    <p class="card-subtitle">Confirmed and Completed sponsorships against the target.</p>
+                </div>
+            </div>
+            <div class="funding-panel">
+                <th:block th:if="${funding.hasTarget()}">
+                    <div class="funding-headline">
+                        <strong th:text="|${funding.percentOfTarget()}%|">0%</strong>
+                        <span class="muted" th:text="${funding.remainingToTarget().signum() > 0} ? |${#numbers.formatDecimal(funding.remainingToTarget(), 1, 'COMMA', 2, 'POINT')} still needed| : 'Target reached'">Still needed</span>
+                    </div>
+                    <div class="progress progress-lg" role="progressbar" aria-label="Committed against target"
+                         aria-valuemin="0" aria-valuemax="100" th:aria-valuenow="${funding.progressWidth()}">
+                        <div class="progress-bar" th:style="|width: ${funding.progressWidth()}%|"
+                             th:classappend="${funding.percentOfTarget() >= 100} ? 'is-complete' : (${funding.percentOfTarget() < 40} ? 'is-low')"></div>
+                    </div>
+                </th:block>
+                <p class="muted" th:unless="${funding.hasTarget()}">
+                    No sponsorship target is set.
+                    <a th:href="@{/events/{id}/edit(id=${event.id})}" sec:authorize="hasRole('ADMIN')">Add a target</a>
+                    <span sec:authorize="!hasRole('ADMIN')">An admin can add one</span>
+                    to track progress and get an alert when the event is close and under-funded.</p>
+                <div class="gauge-figures">
+                    <div class="gauge-figure">
+                        <p class="gauge-figure-label">Pipeline (Proposed + Pending)</p>
+                        <p class="gauge-figure-value" th:text="${#numbers.formatDecimal(funding.pipeline(), 1, 'COMMA', 2, 'POINT')}">0.00</p>
+                    </div>
+                    <div class="gauge-figure">
+                        <p class="gauge-figure-label">Collected</p>
+                        <p class="gauge-figure-value" th:text="${#numbers.formatDecimal(funding.collected(), 1, 'COMMA', 2, 'POINT')}">0.00</p>
+                    </div>
+                    <div class="gauge-figure">
+                        <p class="gauge-figure-label">Outstanding</p>
+                        <p class="gauge-figure-value" th:text="${#numbers.formatDecimal(funding.outstanding(), 1, 'COMMA', 2, 'POINT')}">0.00</p>
+                    </div>
+                </div>
+                <ul class="legend" th:unless="${#lists.isEmpty(tiers)}">
+                    <li th:each="tier : ${tiers}">
+                        <span class="legend-dot" th:classappend="${'fill-' + tier.cssKey()}"></span>
+                        <span th:text="|${tier.label()}: ${tier.count()}|">Gold: 1</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="card description-card">
+            <div class="card-header">
+                <h2 class="section-title">Description</h2>
+            </div>
+            <div class="card-body">
+                <p class="description-text" th:if="${event.description != null}" th:text="${event.description}">
+                    Annual technical festival</p>
+                <p class="muted" th:if="${event.description == null}">No description has been added for this event.</p>
+            </div>
+        </section>
+    </div>
+
+    <section class="card table-card">
+        <div class="card-header">
+            <div>
+                <h2 class="section-title">Sponsors</h2>
+                <p class="card-subtitle">Committed sponsorship counts Confirmed and Completed sponsors.</p>
+            </div>
+            <a class="btn btn-primary btn-sm" id="add-sponsor" th:href="@{/sponsors/new(eventId=${event.id})}" sec:authorize="hasRole('ADMIN')">
+                <svg th:replace="~{fragments/icons :: plus}"></svg>Add Sponsor</a>
+        </div>
+
+        <div class="empty-state" th:if="${#lists.isEmpty(sponsors)}">
+            <span class="empty-state-icon"><svg th:replace="~{fragments/icons :: users}"></svg></span>
+            <p class="empty-state-title">No sponsors are linked to this event yet.</p>
+        </div>
+
+        <div class="table-wrapper" th:unless="${#lists.isEmpty(sponsors)}">
+            <table class="data-table responsive" id="event-sponsors-table">
+                <thead>
+                <tr>
+                    <th>Sponsor</th>
+                    <th>Contact Person</th>
+                    <th>Tier</th>
+                    <th class="col-num">Amount</th>
+                    <th>Status</th>
+                    <th>Payment</th>
+                    <th class="col-actions"><span class="sr-only">Actions</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="sponsor : ${sponsors}">
+                    <td class="cell-primary" data-label="Sponsor">
+                        <div class="cell-identity">
+                            <span class="avatar" aria-hidden="true" th:classappend="${'avatar-' + (sponsor.id % 6)}"
+                                  th:text="${#strings.substring(sponsor.name, 0, 1)}">A</span>
+                            <a class="cell-title" th:href="@{/sponsors/{id}(id=${sponsor.id})}" th:text="${sponsor.name}">Acme Corp</a>
+                        </div>
+                    </td>
+                    <td data-label="Contact Person" th:text="${sponsor.contactPerson ?: '—'}">Jane Doe</td>
+                    <td data-label="Tier">
+                        <span th:replace="~{fragments/ui :: tier(${sponsor.tier})}"></span>
+                        <span class="muted" th:if="${sponsor.tier == null}">—</span>
+                    </td>
+                    <td class="col-num" data-label="Amount">
+                        <span class="amount" th:if="${sponsor.sponsorshipAmount != null}"
+                              th:text="${#numbers.formatDecimal(sponsor.sponsorshipAmount, 1, 'COMMA', 2, 'POINT')}">50,000.00</span>
+                        <span class="muted" th:if="${sponsor.sponsorshipAmount == null}">—</span>
+                    </td>
+                    <td data-label="Status"><span th:replace="~{fragments/ui :: status(${sponsor.sponsorshipStatus})}"></span></td>
+                    <td data-label="Payment"><span th:replace="~{fragments/ui :: payment(${sponsor.paymentStatus})}"></span></td>
+                    <td class="col-actions">
+                        <a class="btn btn-sm btn-soft" th:href="@{/sponsors/{id}/edit(id=${sponsor.id})}" sec:authorize="hasRole('ADMIN')">
+                            <svg th:replace="~{fragments/icons :: edit}"></svg>Edit</a>
+                        <a class="btn btn-sm btn-secondary" th:href="@{/sponsors/{id}(id=${sponsor.id})}" sec:authorize="!hasRole('ADMIN')">
+                            <svg th:replace="~{fragments/icons :: eye}"></svg>View</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="card" th:unless="${#lists.isEmpty(activity)}" sec:authorize="hasRole('ADMIN')">
+        <div class="card-header">
+            <h2 class="section-title">History</h2>
+        </div>
+        <ol th:replace="~{fragments/ui :: timeline(${activity})}"></ol>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

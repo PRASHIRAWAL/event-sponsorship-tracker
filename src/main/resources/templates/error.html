@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Error')}"></head>
+<body>
+<header th:replace="~{fragments/header :: header('')}"></header>
+
+<!-- Fallback error page for any status without its own template (e.g. 400, 422, 500) -->
+<main class="page page-narrow">
+    <div class="card error-page">
+        <p class="error-code" th:text="${status}">500</p>
+        <h1 class="page-title" th:text="${error}">Something went wrong</h1>
+        <p class="muted" th:text="${status != null and status >= 500} ? 'An unexpected error occurred. Please try again.' : 'The request could not be completed. Please check the link or the values you entered.'">
+            An unexpected error occurred.</p>
+        <div class="page-actions">
+            <a class="btn btn-secondary" href="javascript:history.back()">Go back</a>
+            <a class="btn btn-primary" th:href="@{/dashboard}">Go to Dashboard</a>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

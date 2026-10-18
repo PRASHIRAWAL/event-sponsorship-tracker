@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Sign in')}"></head>
+<body class="auth-body">
+
+<!-- Animated backdrop: drifting colour blobs, a faint grid and rising sparks -->
+<div class="aurora" aria-hidden="true">
+    <span class="aurora-blob blob-1"></span>
+    <span class="aurora-blob blob-2"></span>
+    <span class="aurora-blob blob-3"></span>
+    <span class="aurora-blob blob-4"></span>
+    <span class="aurora-grid"></span>
+    <span class="spark" th:each="i : ${#numbers.sequence(1, 14)}" th:style="|--i: ${i}|"></span>
+</div>
+
+<main class="auth">
+    <section class="auth-showcase" aria-hidden="true">
+        <a class="brand brand-light reveal" style="--d: 0" th:href="@{/login}">
+            <span class="brand-mark">ES</span>
+            <span class="brand-text">Sponsorship<span>Tracker</span></span>
+        </a>
+
+        <div class="auth-hero">
+            <p class="auth-kicker reveal" style="--d: 1"><span class="pulse-dot"></span>Live sponsorship workspace</p>
+            <h2 class="auth-headline reveal" style="--d: 2">
+                Keep every
+                <span class="word-rotator">
+                    <span class="word">event</span>
+                    <span class="word">sponsor</span>
+                    <span class="word">payment</span>
+                    <span class="word">target</span>
+                </span>
+                <br>on track.
+            </h2>
+            <p class="auth-lead reveal" style="--d: 3">Funding progress, payments and alerts in one bright, simple
+                dashboard.</p>
+        </div>
+
+        <!-- Decorative preview cards that animate like a live dashboard -->
+        <div class="float-stage" data-parallax>
+            <div class="float-card card-funding reveal" style="--d: 4" data-depth="18">
+                <div class="fc-head">
+                    <span class="fc-icon fc-indigo"><svg th:replace="~{fragments/icons :: target}"></svg></span>
+                    <div>
+                        <p class="fc-title">TechNova 2026</p>
+                        <p class="fc-sub">Funding target</p>
+                    </div>
+                    <span class="fc-pct"><span data-count-to="82">0</span>%</span>
+                </div>
+                <div class="fc-progress"><span></span></div>
+                <p class="fc-sub">₹<span data-count-to="410000" data-format="money">0</span> of ₹5,00,000 committed</p>
+            </div>
+
+            <div class="float-card card-chart reveal" style="--d: 5" data-depth="30">
+                <p class="fc-title">Collected this month</p>
+                <div class="fc-bars">
+                    <span style="--h: 38%"></span><span style="--h: 62%"></span><span style="--h: 48%"></span>
+                    <span style="--h: 80%"></span><span style="--h: 56%"></span><span style="--h: 92%"></span>
+                    <span style="--h: 70%"></span>
+                </div>
+            </div>
+
+            <div class="float-card card-toast reveal" style="--d: 6" data-depth="42">
+                <span class="fc-icon fc-green"><svg th:replace="~{fragments/icons :: check}"></svg></span>
+                <div>
+                    <p class="fc-title">Payment received</p>
+                    <p class="fc-sub">Infosys Foundation · ₹50,000</p>
+                </div>
+            </div>
+
+            <div class="float-card card-avatars reveal" style="--d: 7" data-depth="24">
+                <div class="fc-avatars">
+                    <span style="--c: #6366f1">I</span><span style="--c: #14b8a6">T</span>
+                    <span style="--c: #f59e0b">Z</span><span style="--c: #ec4899">R</span>
+                </div>
+                <p class="fc-sub"><strong><span data-count-to="12">0</span> sponsors</strong> across 6 events</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="auth-panel">
+        <div class="auth-card" th:classappend="${param.error != null or param.locked != null} ? 'shake'">
+            <div class="auth-card-glow" aria-hidden="true"></div>
+
+            <div class="auth-card-head reveal" style="--d: 1">
+                <span class="auth-icon">
+                    <svg th:replace="~{fragments/icons :: lock}"></svg>
+                    <span class="auth-icon-ring" aria-hidden="true"></span>
+                </span>
+                <h1 class="auth-title">Welcome back <span class="wave" aria-hidden="true">👋</span></h1>
+                <p class="muted">Sign in to manage your events and sponsors.</p>
+            </div>
+
+            <div class="banner banner-error reveal" id="login-error" role="alert" th:if="${param.error != null}">
+                <svg th:replace="~{fragments/icons :: error}"></svg>
+                <span>Incorrect user name or password.</span>
+            </div>
+            <div class="banner banner-error reveal" id="login-locked" role="alert" th:if="${param.locked != null}">
+                <svg th:replace="~{fragments/icons :: lock}"></svg>
+                <span>This account is temporarily locked after too many failed attempts. Try again in 15 minutes.</span>
+            </div>
+            <div class="banner banner-success reveal" id="logout-message" role="status" th:if="${param.logout != null}">
+                <svg th:replace="~{fragments/icons :: check}"></svg>
+                <span>You have been signed out. See you soon!</span>
+            </div>
+
+            <form class="auth-form" id="login-form" method="post" th:action="@{/login}" data-login-form>
+                <div class="float-field reveal" style="--d: 2">
+                    <svg th:replace="~{fragments/icons :: user}"></svg>
+                    <input class="input" type="text" id="username" name="username" placeholder=" "
+                           autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus>
+                    <label for="username">User name</label>
+                </div>
+                <div class="float-field reveal" style="--d: 3">
+                    <svg th:replace="~{fragments/icons :: lock}"></svg>
+                    <input class="input" type="password" id="password" name="password" placeholder=" "
+                           autocomplete="current-password" required>
+                    <label for="password">Password</label>
+                    <button type="button" class="input-reveal" data-reveal="password"
+                            aria-label="Show password" aria-pressed="false">Show</button>
+                </div>
+                <p class="caps-warning" id="caps-warning" hidden>
+                    <svg th:replace="~{fragments/icons :: alert}"></svg>Caps Lock is on</p>
+
+                <label class="switch reveal" style="--d: 4">
+                    <input type="checkbox" name="remember-me" id="remember-me">
+                    <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+                    <span>Keep me signed in for 14 days</span>
+                </label>
+
+                <button type="submit" class="btn btn-primary btn-block btn-shine reveal" style="--d: 5" id="login-button">
+                    <span class="btn-label">Sign in</span>
+                    <svg class="icon btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M5 12h14M13 6l6 6-6 6"/>
+                    </svg>
+                    <span class="spinner" aria-hidden="true"></span>
+                </button>
+            </form>
+
+            <div class="auth-demo reveal" style="--d: 6" id="demo-accounts" th:if="${demoAdmin != null}">
+                <p class="auth-demo-title">Try a demo account</p>
+                <div class="auth-demo-grid">
+                    <button type="button" class="auth-demo-row" th:data-fill-user="${demoAdmin}"
+                            th:data-fill-pass="${demoAdminPassword}">
+                        <span class="demo-avatar demo-admin">A</span>
+                        <span class="demo-text"><strong>Admin</strong>
+                            <code th:text="|${demoAdmin} / ${demoAdminPassword}|">admin / admin123</code></span>
+                    </button>
+                    <button type="button" class="auth-demo-row" th:if="${demoViewer != null}"
+                            th:data-fill-user="${demoViewer}" th:data-fill-pass="${demoViewerPassword}">
+                        <span class="demo-avatar demo-viewer">V</span>
+                        <span class="demo-text"><strong>Viewer</strong>
+                            <code th:text="|${demoViewer} / ${demoViewerPassword}|">viewer / viewer123</code></span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="auth-foot reveal" style="--d: 7">
+                <span><svg th:replace="~{fragments/icons :: shield}"></svg>Admins can edit · viewers read-only</span>
+                <button type="button" class="icon-btn theme-toggle" data-theme-toggle aria-label="Toggle dark mode"
+                        title="Toggle dark mode">
+                    <svg th:replace="~{fragments/icons :: sun}"></svg>
+                    <svg th:replace="~{fragments/icons :: moon}"></svg>
+                </button>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script th:src="@{/js/app.js}" defer></script>
+</body>
+</html>

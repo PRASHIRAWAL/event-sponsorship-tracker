@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${sponsor.name})}"></head>
+<body>
+<header th:replace="~{fragments/header :: header('sponsors')}"></header>
+
+<main class="page">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a th:href="@{/sponsors}">Sponsors</a>
+        <span aria-hidden="true">/</span>
+        <span th:text="${sponsor.name}">Acme Corp</span>
+    </nav>
+
+    <div th:replace="~{fragments/ui :: flash}"></div>
+
+    <section class="card detail-hero" id="sponsor-details">
+        <div class="detail-hero-main">
+            <span class="avatar avatar-lg" aria-hidden="true" th:classappend="${'avatar-' + (sponsor.id % 6)}"
+                  th:text="${#strings.substring(sponsor.name, 0, 1)}">A</span>
+            <div>
+                <h1 class="page-title">
+                    <span th:text="${sponsor.name}">Acme Corp</span>
+                    <span th:replace="~{fragments/ui :: status(${sponsor.sponsorshipStatus})}"></span>
+                    <span th:replace="~{fragments/ui :: tier(${sponsor.tier})}"></span>
+                </h1>
+                <div class="detail-meta">
+                    <span th:if="${sponsor.industry != null}"><svg th:replace="~{fragments/icons :: building}"></svg>
+                        <span th:text="${sponsor.industry}">Software</span></span>
+                    <span th:if="${sponsor.event != null}"><svg th:replace="~{fragments/icons :: calendar}"></svg>
+                        <a th:href="@{/events/{id}(id=${sponsor.event.id})}" th:text="${sponsor.event.name}">Tech Fest</a></span>
+                    <span th:if="${sponsor.event == null}" class="badge badge-neutral">Not linked to an event</span>
+                </div>
+            </div>
+        </div>
+        <div class="page-actions">
+            <a class="btn btn-secondary" th:href="@{/sponsors}">
+                <svg th:replace="~{fragments/icons :: arrowLeft}"></svg>Back</a>
+            <th:block sec:authorize="hasRole('ADMIN')">
+            <a class="btn btn-primary" id="edit-sponsor" th:href="@{/sponsors/{id}/edit(id=${sponsor.id})}">
+                <svg th:replace="~{fragments/icons :: edit}"></svg>Edit Sponsor</a>
+            <form class="inline-form" method="post" th:action="@{/sponsors/{id}/delete(id=${sponsor.id})}"
+                  th:data-confirm="|Delete sponsor &quot;${sponsor.name}&quot;?|"
+                  th:data-confirm-detail="${#lists.isEmpty(payments)} ? 'This cannot be undone.' : |Its ${#lists.size(payments)} recorded payment(s) will be deleted too. This cannot be undone.|">
+                <button type="submit" class="btn btn-danger-soft" id="delete-sponsor">
+                    <svg th:replace="~{fragments/icons :: trash}"></svg>Delete</button>
+            </form>
+            </th:block>
+        </div>
+    </section>
+
+    <section class="stat-grid" aria-label="Payment summary">
+        <div class="card stat">
+            <span class="kpi-icon"><svg th:replace="~{fragments/icons :: wallet}"></svg></span>
+            <div>
+                <p class="stat-label">Sponsorship amount</p>
+                <p class="stat-value" id="sponsor-amount"
+                   th:text="${sponsor.sponsorshipAmount != null} ? ${#numbers.formatDecimal(sponsor.sponsorshipAmount, 1, 'COMMA', 2, 'POINT')} : 'Not recorded'">0.00</p>
+            </div>
+        </div>
+        <div class="card stat">
+            <span class="kpi-icon kpi-icon-success"><svg th:replace="~{fragments/icons :: check}"></svg></span>
+            <div>
+                <p class="stat-label">Paid</p>
+                <p class="stat-value" id="sponsor-paid"
+                   th:text="${#numbers.formatDecimal(sponsor.amountPaid, 1, 'COMMA', 2, 'POINT')}">0.00</p>
+            </div>
+        </div>
+        <div class="card stat">
+            <span class="kpi-icon kpi-icon-warning"><svg th:replace="~{fragments/icons :: clock}"></svg></span>
+            <div>
+                <p class="stat-label">Outstanding</p>
+                <p class="stat-value" id="sponsor-outstanding"
+                   th:text="${#numbers.formatDecimal(sponsor.outstandingAmount, 1, 'COMMA', 2, 'POINT')}">0.00</p>
+            </div>
+        </div>
+        <div class="card stat">
+            <span class="kpi-icon kpi-icon-info"><svg th:replace="~{fragments/icons :: calendar}"></svg></span>
+            <div>
+                <p class="stat-label">Payment status</p>
+                <p class="stat-value" id="sponsor-payment-status">
+                    <span th:replace="~{fragments/ui :: payment(${sponsor.paymentStatus})}"></span></p>
+            </div>
+        </div>
+    </section>
+
+    <div class="grid-main-side">
+        <div class="stack">
+            <section class="card table-card" id="payments-panel">
+                <div class="card-header">
+                    <div>
+                        <h2 class="section-title">Payments</h2>
+                        <p class="card-subtitle" th:if="${sponsor.paymentDueDate != null}"
+                           th:text="|Due by ${#temporals.format(sponsor.paymentDueDate, 'dd MMM yyyy')}|">Due by</p>
+                        <p class="card-subtitle" th:if="${sponsor.paymentDueDate == null}">No due date set.</p>
+                    </div>
+                    <span class="badge badge-neutral" th:text="|${sponsor.paidPercent}% paid|">0% paid</span>
+                </div>
+                <div class="card-body" th:if="${sponsor.sponsorshipAmount != null}">
+                    <div class="progress progress-lg" role="progressbar" aria-label="Share of the sponsorship paid"
+                         aria-valuemin="0" aria-valuemax="100" th:aria-valuenow="${sponsor.paidPercent}">
+                        <div class="progress-bar" th:style="|width: ${sponsor.paidPercent}%|"
+                             th:classappend="${sponsor.paidPercent >= 100} ? 'is-complete'"></div>
+                    </div>
+                </div>
+                <p class="empty-inline" id="payments-restricted" sec:authorize="!hasRole('ADMIN')">
+                    <svg th:replace="~{fragments/icons :: lock}"></svg>
+                    Individual payment records are only visible to admins.</p>
+                <div class="empty-state" th:if="${#lists.isEmpty(payments)}" sec:authorize="hasRole('ADMIN')">
+                    <span class="empty-state-icon"><svg th:replace="~{fragments/icons :: wallet}"></svg></span>
+                    <p class="empty-state-title">No payments recorded yet.</p>
+                </div>
+                <div class="table-wrapper" th:unless="${#lists.isEmpty(payments)}" sec:authorize="hasRole('ADMIN')">
+                    <table class="data-table responsive" id="payments-table">
+                        <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Method</th>
+                            <th>Reference</th>
+                            <th class="col-num">Amount</th>
+                            <th class="col-actions"><span class="sr-only">Actions</span></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="p : ${payments}">
+                            <td class="nowrap" data-label="Date" th:text="${#temporals.format(p.paymentDate, 'dd MMM yyyy')}">05 Nov 2026</td>
+                            <td data-label="Method" th:text="${p.method.label}">UPI</td>
+                            <td data-label="Reference" th:text="${p.reference ?: '—'}">UTR-123</td>
+                            <td class="col-num amount" data-label="Amount"
+                                th:text="${#numbers.formatDecimal(p.amount, 1, 'COMMA', 2, 'POINT')}">10,000.00</td>
+                            <td class="col-actions">
+                                <form class="inline-form" method="post" sec:authorize="hasRole('ADMIN')"
+                                      th:action="@{/sponsors/{id}/payments/{pid}/delete(id=${sponsor.id},pid=${p.id})}"
+                                      th:data-confirm="|Remove payment of ${#numbers.formatDecimal(p.amount, 1, 'COMMA', 2, 'POINT')}?|"
+                                      data-confirm-detail="The amount paid and payment status will be recalculated.">
+                                    <button type="submit" class="btn btn-sm btn-ghost" aria-label="Remove payment">
+                                        <svg th:replace="~{fragments/icons :: trash}"></svg></button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="card" id="record-payment" sec:authorize="hasRole('ADMIN')">
+                <div class="card-header">
+                    <div>
+                        <h2 class="section-title">Record a payment</h2>
+                        <p class="card-subtitle">Payments cannot exceed the outstanding balance.</p>
+                    </div>
+                </div>
+                <p class="empty-inline" th:if="${sponsor.sponsorshipStatus.name() == 'CANCELLED'}">
+                    This sponsorship is cancelled, so no payments can be recorded.</p>
+                <p class="empty-inline" th:if="${sponsor.sponsorshipStatus.name() != 'CANCELLED' and sponsor.sponsorshipAmount == null}">
+                    Add a sponsorship amount (<a th:href="@{/sponsors/{id}/edit(id=${sponsor.id})}">edit sponsor</a>)
+                    before recording payments.</p>
+                <p class="empty-inline text-success" th:if="${sponsor.paymentStatus.name() == 'PAID'}">
+                    Fully paid — nothing outstanding.</p>
+                <form class="payment-form" id="payment-form" method="post" th:object="${payment}"
+                      th:action="@{/sponsors/{id}/payments(id=${sponsor.id})}"
+                      th:if="${sponsor.sponsorshipStatus.name() != 'CANCELLED' and sponsor.sponsorshipAmount != null and sponsor.paymentStatus.name() != 'PAID'}">
+                    <div class="banner banner-error" id="payment-errors" role="alert" th:if="${#fields.hasErrors('*')}">
+                        <svg th:replace="~{fragments/icons :: error}"></svg>
+                        <span>The payment was not recorded. Please check the fields below.</span>
+                    </div>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label class="label" for="amount">Amount <span class="required">*</span></label>
+                            <div class="input-affix">
+                                <span class="affix" aria-hidden="true">₹</span>
+                                <input class="input" type="number" id="amount" th:field="*{amount}" min="0.01" step="0.01"
+                                       th:max="${sponsor.outstandingAmount}" required
+                                       th:placeholder="${#numbers.formatDecimal(sponsor.outstandingAmount, 1, 2, 'POINT')}"
+                                       th:classappend="${#fields.hasErrors('amount')} ? 'invalid'">
+                            </div>
+                            <p class="field-error" th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}">Error</p>
+                        </div>
+                        <div class="field">
+                            <label class="label" for="paymentDate">Date <span class="required">*</span></label>
+                            <input class="input" type="date" id="paymentDate" th:field="*{paymentDate}" required
+                                   th:max="${today}"
+                                   th:classappend="${#fields.hasErrors('paymentDate')} ? 'invalid'">
+                            <p class="field-error" th:if="${#fields.hasErrors('paymentDate')}" th:errors="*{paymentDate}">Error</p>
+                        </div>
+                        <div class="field">
+                            <label class="label" for="method">Method <span class="required">*</span></label>
+                            <select class="select" id="method" th:field="*{method}" required
+                                    th:classappend="${#fields.hasErrors('method')} ? 'invalid'">
+                                <option th:each="m : ${methods}" th:value="${m}" th:text="${m.label}">UPI</option>
+                            </select>
+                            <p class="field-error" th:if="${#fields.hasErrors('method')}" th:errors="*{method}">Error</p>
+                        </div>
+                        <div class="field">
+                            <label class="label" for="reference">Reference <span class="optional">(optional)</span></label>
+                            <input class="input" type="text" id="reference" th:field="*{reference}" maxlength="100"
+                                   placeholder="UTR / cheque no."
+                                   th:classappend="${#fields.hasErrors('reference')} ? 'invalid'">
+                            <p class="field-error" th:if="${#fields.hasErrors('reference')}" th:errors="*{reference}">Error</p>
+                        </div>
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-primary" id="save-payment">
+                            <svg th:replace="~{fragments/icons :: plus}"></svg>Record Payment</button>
+                    </div>
+                </form>
+            </section>
+        </div>
+
+        <div class="stack">
+            <section class="card">
+                <div class="card-header">
+                    <h2 class="section-title">Contact</h2>
+                </div>
+                <dl class="info-list">
+                    <dt>Contact person</dt>
+                    <dd th:text="${sponsor.contactPerson ?: '—'}">Jane Doe</dd>
+                    <dt>Email</dt>
+                    <dd>
+                        <a th:if="${sponsor.email != null}" th:href="|mailto:${sponsor.email}|" th:text="${sponsor.email}">jane@acme.com</a>
+                        <span th:if="${sponsor.email == null}">—</span>
+                    </dd>
+                    <dt>Phone</dt>
+                    <dd>
+                        <a th:if="${sponsor.phone != null}" th:href="|tel:${sponsor.phone}|" th:text="${sponsor.phone}">+91</a>
+                        <span th:if="${sponsor.phone == null}">—</span>
+                    </dd>
+                    <dt>Payment due</dt>
+                    <dd th:text="${sponsor.paymentDueDate != null} ? ${#temporals.format(sponsor.paymentDueDate, 'dd MMM yyyy')} : '—'">—</dd>
+                </dl>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <h2 class="section-title">Notes</h2>
+                </div>
+                <div class="card-body">
+                    <p class="description-text" th:if="${sponsor.notes != null}" th:text="${sponsor.notes}">Notes</p>
+                    <p class="muted" th:if="${sponsor.notes == null}">No notes for this sponsor.</p>
+                </div>
+            </section>
+
+            <section class="card" th:unless="${#lists.isEmpty(activity)}" sec:authorize="hasRole('ADMIN')">
+                <div class="card-header">
+                    <h2 class="section-title">History</h2>
+                </div>
+                <ol th:replace="~{fragments/ui :: timeline(${activity})}"></ol>
+            </section>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>
